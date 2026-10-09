@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$InstallerUrl = "https://go.microsoft.com/fwlink/?linkid=2215158",
+    [string]$InstallerUrl = "https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-8eae-06e247e17b25/SQLServer2022-DEV-x64-ENU.exe",
+    [string]$PayloadUrl = "https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-8eae-06e247e17b25/SQLServer2022-DEV-x64-ENU.box",
     [string]$InstanceName = "MSSQLSERVER"
 )
 
@@ -20,7 +21,10 @@ function Invoke-ProcessWithHeartbeat {
         [string[]]$ArgumentList,
 
         [Parameter(Mandatory)]
-        [string]$Activity
+        [string]$Activity,
+
+        [Parameter(Mandatory)]
+        [int]$TimeoutMinutes
     )
 
     $process = Start-Process `
@@ -32,6 +36,11 @@ function Invoke-ProcessWithHeartbeat {
 
     while (-not $process.WaitForExit(30000)) {
         Write-Host "$Activity is still running ($([math]::Round($timer.Elapsed.TotalMinutes, 1)) minutes elapsed)."
+        if ($timer.Elapsed.TotalMinutes -ge $TimeoutMinutes) {
+            & taskkill.exe /PID $process.Id /T /F 2>&1 |
+                ForEach-Object { Write-Host $_ }
+            throw "$Activity exceeded its $TimeoutMinutes-minute timeout."
+        }
     }
 
     $timer.Stop()
@@ -53,36 +62,46 @@ if (-not $principal.IsInRole($administrator)) {
     throw "SQL Server installation requires an elevated Windows runner."
 }
 
-$installerPath = Join-Path $env:RUNNER_TEMP "SQL2022-SSEI-Dev.exe"
+$installerPath = Join-Path $env:RUNNER_TEMP "SQLServer2022-DEV-x64-ENU.exe"
+$payloadPath = Join-Path $env:RUNNER_TEMP "SQLServer2022-DEV-x64-ENU.box"
 $mediaPath = Join-Path $env:RUNNER_TEMP "SQL2022Media"
 
 try {
-    Write-Host "Downloading the official SQL Server 2022 Developer installer."
-    Invoke-WebRequest -Uri $InstallerUrl -OutFile $installerPath -UseBasicParsing
-
-    New-Item -ItemType Directory -Path $mediaPath -Force | Out-Null
-    $downloadArguments = @(
-        "/ACTION=Download"
-        "/MEDIAPATH=$mediaPath"
-        "/MEDIATYPE=Cab"
-        "/QUIET"
-    )
-    $downloadExitCode = Invoke-ProcessWithHeartbeat `
-        -FilePath $installerPath `
-        -ArgumentList $downloadArguments `
-        -Activity "SQL Server media download"
-
-    if ($downloadExitCode -ne 0) {
-        throw "SQL Server media download failed with exit code $downloadExitCode."
+    Write-Host "Downloading official SQL Server 2022 Developer media."
+    foreach ($download in @(
+        @{ Url = $InstallerUrl; Path = $installerPath; Name = "installer" }
+        @{ Url = $PayloadUrl; Path = $payloadPath; Name = "payload" }
+    )) {
+        $downloadExitCode = Invoke-ProcessWithHeartbeat `
+            -FilePath "curl.exe" `
+            -ArgumentList @(
+                "--fail"
+                "--location"
+                "--retry", "3"
+                "--retry-all-errors"
+                "--output", $download.Path
+                $download.Url
+            ) `
+            -Activity "SQL Server $($download.Name) download" `
+            -TimeoutMinutes 30
+        if ($downloadExitCode -ne 0) {
+            throw "SQL Server $($download.Name) download failed with exit code $downloadExitCode."
+        }
     }
 
-    $setup = Get-ChildItem `
-        -LiteralPath $mediaPath `
-        -Filter setup.exe `
-        -Recurse |
-        Select-Object -First 1
-    if (-not $setup) {
-        throw "The SQL Server media download did not produce setup.exe."
+    New-Item -ItemType Directory -Path $mediaPath -Force | Out-Null
+    $extractExitCode = Invoke-ProcessWithHeartbeat `
+        -FilePath $installerPath `
+        -ArgumentList @("/qs", "/x:$mediaPath") `
+        -Activity "SQL Server media extraction" `
+        -TimeoutMinutes 20
+    if ($extractExitCode -ne 0) {
+        throw "SQL Server media extraction failed with exit code $extractExitCode."
+    }
+
+    $setupPath = Join-Path $mediaPath "setup.exe"
+    if (-not (Test-Path -LiteralPath $setupPath)) {
+        throw "SQL Server media extraction did not produce setup.exe."
     }
 
     $setupArguments = @(
@@ -101,9 +120,10 @@ try {
     )
 
     $setupExitCode = Invoke-ProcessWithHeartbeat `
-        -FilePath $setup.FullName `
+        -FilePath $setupPath `
         -ArgumentList $setupArguments `
-        -Activity "SQL Server setup"
+        -Activity "SQL Server setup" `
+        -TimeoutMinutes 45
 
     if ($setupExitCode -notin 0, 3010) {
         $summaryPath = Get-ChildItem `
@@ -124,5 +144,6 @@ try {
     Write-Host "SQL Server Developer installed successfully."
 } finally {
     Remove-Item -LiteralPath $installerPath -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $payloadPath -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $mediaPath -Recurse -Force -ErrorAction SilentlyContinue
 }

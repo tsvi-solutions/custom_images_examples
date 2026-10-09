@@ -66,6 +66,7 @@ jobs:
 
       - name: Install and verify SQL Server
         id: sql_timing
+        timeout-minutes: 135
         shell: pwsh
         run: |
           $timer = [System.Diagnostics.Stopwatch]::StartNew()

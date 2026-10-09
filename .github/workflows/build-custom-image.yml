@@ -42,6 +42,7 @@ jobs:
           persist-credentials: false
 
       - name: Install SQL Server Developer
+        timeout-minutes: 135
         shell: pwsh
         run: ./image-source/scripts/Install-SqlServer.ps1
 
