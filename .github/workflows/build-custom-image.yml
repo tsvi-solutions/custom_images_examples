@@ -12,6 +12,9 @@ concurrency:
   group: windows-monorepo-sqlserver-image
   cancel-in-progress: false
 
+env:
+  BENCHMARK_REPOSITORY: ${{ vars.BENCHMARK_REPOSITORY || 'llvm/llvm-project' }}
+
 jobs:
   build-image:
     name: Build image
@@ -22,11 +25,20 @@ jobs:
       version: "1.*"
 
     steps:
-      - name: Check out the complete repository
+      - name: Check out the example tooling
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           path: image-source
+          persist-credentials: false
+
+      - name: Check out the benchmark monorepo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.BENCHMARK_REPOSITORY }}
+          token: ${{ secrets.BENCHMARK_TOKEN || github.token }}
+          fetch-depth: 0
+          path: benchmark-source
           persist-credentials: false
 
       - name: Install SQL Server Developer
@@ -37,10 +49,10 @@ jobs:
         shell: pwsh
         env:
           CACHE_ROOT: C:\ProgramData\GitHubCustomImage
-          REMOTE_URL: ${{ github.server_url }}/${{ github.repository }}.git
+          REMOTE_URL: ${{ github.server_url }}/${{ env.BENCHMARK_REPOSITORY }}.git
         run: |
           ./image-source/scripts/Seed-GitRepository.ps1 `
-            -SourcePath "$env:GITHUB_WORKSPACE\image-source" `
+            -SourcePath "$env:GITHUB_WORKSPACE\benchmark-source" `
             -CacheRoot $env:CACHE_ROOT `
             -RemoteUrl $env:REMOTE_URL
 
@@ -70,4 +82,4 @@ jobs:
         run: |
           Set-Location $env:RUNNER_TEMP
           Remove-Item -LiteralPath "$env:GITHUB_WORKSPACE\image-source" -Recurse -Force
-
+          Remove-Item -LiteralPath "$env:GITHUB_WORKSPACE\benchmark-source" -Recurse -Force

@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+env:
+  BENCHMARK_REPOSITORY: ${{ vars.BENCHMARK_REPOSITORY || 'llvm/llvm-project' }}
+
 jobs:
   before:
     name: Before - windows-latest
@@ -22,6 +25,12 @@ jobs:
       total_seconds: ${{ steps.total_timing.outputs.elapsed_seconds }}
 
     steps:
+      - name: Check out the example tooling
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          path: example-source
+
       - name: Start optional runner telemetry
         if: ${{ inputs.telemetry }}
         uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # v1
@@ -34,10 +43,14 @@ jobs:
           [System.Diagnostics.Stopwatch]::GetTimestamp() |
             Set-Content -LiteralPath "$env:RUNNER_TEMP\checkout-start.txt"
 
-      - name: Check out the complete repository
+      - name: Check out the complete benchmark monorepo
         uses: actions/checkout@v4
         with:
+          repository: ${{ env.BENCHMARK_REPOSITORY }}
+          token: ${{ secrets.BENCHMARK_TOKEN || github.token }}
           fetch-depth: 0
+          path: benchmark-source
+          persist-credentials: false
 
       - name: Record cold checkout duration
         id: checkout_timing
@@ -56,8 +69,8 @@ jobs:
         shell: pwsh
         run: |
           $timer = [System.Diagnostics.Stopwatch]::StartNew()
-          ./scripts/Install-SqlServer.ps1
-          ./scripts/Test-SqlServer.ps1 -CreateExampleDatabase
+          ./example-source/scripts/Install-SqlServer.ps1
+          ./example-source/scripts/Test-SqlServer.ps1 -CreateExampleDatabase
           $timer.Stop()
           $seconds = $timer.Elapsed.TotalSeconds.ToString(
             "0.00",
@@ -93,6 +106,12 @@ jobs:
       total_seconds: ${{ steps.total_timing.outputs.elapsed_seconds }}
 
     steps:
+      - name: Check out the example tooling
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          path: example-source
+
       - name: Start optional runner telemetry
         if: ${{ inputs.telemetry }}
         uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # v1
@@ -101,21 +120,25 @@ jobs:
         id: initialize
         shell: pwsh
         env:
-          REMOTE_URL: ${{ github.server_url }}/${{ github.repository }}.git
+          REMOTE_URL: ${{ github.server_url }}/${{ env.BENCHMARK_REPOSITORY }}.git
         run: |
           [System.Diagnostics.Stopwatch]::GetTimestamp() |
             Set-Content -LiteralPath "$env:RUNNER_TEMP\total-start.txt"
           $elapsed = & C:\ProgramData\GitHubCustomImage\Initialize-WarmCheckout.ps1 `
-            -WorkspacePath $env:GITHUB_WORKSPACE `
+            -WorkspacePath "$env:GITHUB_WORKSPACE\benchmark-source" `
             -RemoteUrl $env:REMOTE_URL
           "elapsed_seconds=$elapsed" >> $env:GITHUB_OUTPUT
           [System.Diagnostics.Stopwatch]::GetTimestamp() |
             Set-Content -LiteralPath "$env:RUNNER_TEMP\checkout-start.txt"
 
-      - name: Check out requested revision
+      - name: Check out the benchmark monorepo delta
         uses: actions/checkout@v4
         with:
+          repository: ${{ env.BENCHMARK_REPOSITORY }}
+          token: ${{ secrets.BENCHMARK_TOKEN || github.token }}
           fetch-depth: 0
+          path: benchmark-source
+          persist-credentials: false
 
       - name: Record warm checkout duration
         id: checkout_timing
@@ -137,7 +160,7 @@ jobs:
         shell: pwsh
         run: |
           $timer = [System.Diagnostics.Stopwatch]::StartNew()
-          ./scripts/Test-SqlServer.ps1 -CreateExampleDatabase
+          ./example-source/scripts/Test-SqlServer.ps1 -CreateExampleDatabase
           $timer.Stop()
           $seconds = $timer.Elapsed.TotalSeconds.ToString(
             "0.00",
@@ -170,6 +193,7 @@ jobs:
       - after
     runs-on: ubuntu-latest
     env:
+      BENCHMARK_REPOSITORY: ${{ vars.BENCHMARK_REPOSITORY || 'llvm/llvm-project' }}
       BEFORE_CHECKOUT: ${{ needs.before.outputs.checkout_seconds }}
       AFTER_CHECKOUT: ${{ needs.after.outputs.checkout_seconds }}
       BEFORE_SQL: ${{ needs.before.outputs.sql_seconds }}
@@ -203,6 +227,8 @@ jobs:
 
           @"
           # Custom image: before and after
+
+          Benchmark repository: **$env:BENCHMARK_REPOSITORY**
 
           | Measurement | Before: **windows-latest** | After: custom image |
           |---|---:|---:|

@@ -108,16 +108,21 @@ summary:
 | **Total measured setup** | **Cold path** | **Pre-warmed path** |
 | Result | Baseline | Seconds saved, percentage reduction, and speedup |
 
+The benchmark does **not** inflate this example repository with generated
+files. By default, it performs a real full-history checkout of
+[`llvm/llvm-project`](https://github.com/llvm/llvm-project), a substantial
+public monorepo. Set the `BENCHMARK_REPOSITORY` repository or organization
+variable to use a different `owner/repository`, including your own
+representative monorepo.
+
 Actual numbers depend on repository size, repository growth, image freshness,
-runner size, and network conditions. This starter repository is intentionally
-small; the checkout benefit becomes visible as it grows into a large monorepo.
-The workflow reports measurements instead of promising a synthetic “5-minute
-to 5-second” result.
+runner size, and network conditions. The workflow reports real measurements
+instead of promising a synthetic “5-minute to 5-second” result.
 
 ## 🧠 The big idea
 
-The image-generation workflow checks out the complete repository once and
-creates a sanitized bare mirror:
+The image-generation workflow checks out the selected benchmark monorepo once
+and creates a sanitized bare mirror:
 
 ```text
 C:\ProgramData\GitHubCustomImage\repository.git
@@ -134,7 +139,7 @@ sequenceDiagram
     participant Mirror as Local Git mirror
     participant Snapshot as Custom image
     participant Job as Workflow job
-    participant GitHub as GitHub repository
+    participant GitHub as Benchmark monorepo
 
     Note over Build,Snapshot: IMAGE BUILD · prepare once
     Build->>GitHub: Full-history checkout
@@ -176,12 +181,30 @@ a named larger runner—not through the standard `windows-latest` label.
    - **Runner group:** one that can access this repository
 3. Name it `windows-image-generation`, or set the organization variable
    `IMAGE_GENERATION_RUNNER` to the actual runner name.
-4. Run **Build Windows monorepo image** from the Actions tab.
+4. Optionally set `BENCHMARK_REPOSITORY` to an `owner/repository`. It defaults
+   to `llvm/llvm-project`.
+5. Run **Build Windows monorepo image** from the Actions tab.
 
 The [image workflow](.github/workflows/build-custom-image.yml) installs and
 validates SQL Server, creates and verifies the Git mirror, checks for captured
 credentials, and publishes `windows-monorepo-sqlserver` only after every step
 succeeds.
+
+### Benchmark repository configuration
+
+| Setting | Required | Purpose |
+|---|:---:|---|
+| `BENCHMARK_REPOSITORY` Actions variable | No | Repository to clone; defaults to `llvm/llvm-project` |
+| `BENCHMARK_TOKEN` Actions secret | Private repositories only | Fine-grained token with read-only Contents access to the benchmark repository |
+
+The image records the benchmark repository URL next to the mirror. If
+`BENCHMARK_REPOSITORY` changes without rebuilding the image, the after job
+fails with a clear mismatch message instead of publishing an invalid
+comparison. Run **Build Windows monorepo image** again after changing it.
+
+The token is used only by `actions/checkout`. The benchmark checkout sets
+`persist-credentials: false`, the mirror stores only a plain HTTPS remote, and
+the image build scans the Git configuration before creating the snapshot.
 
 > [!NOTE]
 > GitHub may continue provisioning the image after the workflow completes.
@@ -212,6 +235,14 @@ percentage reduction
 overall speedup
 ```
 
+The lightweight checkout of this example repository supplies only the
+PowerShell tooling and occurs **before** timing starts. The measured checkout is
+the separate benchmark monorepo:
+
+- **Before:** `actions/checkout` downloads its complete history from GitHub.
+- **After:** a local reference clone reuses the mirror baked into the image,
+  then `actions/checkout` downloads only objects added since the image build.
+
 Both timers begin in the first measured step. Runner queue and provisioning
 time are excluded because those values reflect runner capacity and service
 conditions—not setup work removed by the image.
@@ -241,7 +272,7 @@ executing a mutable tag directly.
 | File | Role |
 |---|---|
 | [`.github/workflows/build-custom-image.yml`](.github/workflows/build-custom-image.yml) | Builds, validates, versions, and snapshots the Windows image |
-| [`.github/workflows/compare-before-after.yml`](.github/workflows/compare-before-after.yml) | Runs the fair before/after benchmark and publishes results |
+| [`.github/workflows/compare-before-after.yml`](.github/workflows/compare-before-after.yml) | Clones a real external monorepo, runs the fair before/after benchmark, and publishes results |
 | [`scripts/Install-SqlServer.ps1`](scripts/Install-SqlServer.ps1) | Downloads official media and installs SQL Server 2022 Developer silently |
 | [`scripts/Seed-GitRepository.ps1`](scripts/Seed-GitRepository.ps1) | Builds and sanitizes the bare repository mirror |
 | [`scripts/Initialize-WarmCheckout.ps1`](scripts/Initialize-WarmCheckout.ps1) | Creates the local reference clone before `actions/checkout` |

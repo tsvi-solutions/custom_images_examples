@@ -12,6 +12,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 $mirrorPath = Join-Path $CacheRoot "repository.git"
+$repositoryUrlPath = Join-Path $CacheRoot "repository-url.txt"
+$normalizedRemoteUrl = $RemoteUrl.TrimEnd("/")
 
 if (-not (Test-Path -LiteralPath (Join-Path $SourcePath ".git"))) {
     throw "'$SourcePath' is not a Git working tree."
@@ -27,7 +29,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "Unable to create the image's Git mirror."
 }
 
-& git -C $mirrorPath remote set-url origin $RemoteUrl
+& git -C $mirrorPath remote set-url origin $normalizedRemoteUrl
 if ($LASTEXITCODE -ne 0) {
     throw "Unable to sanitize the mirror's origin URL."
 }
@@ -39,5 +41,10 @@ if ($LASTEXITCODE -ne 0) {
     throw "The image's Git mirror failed validation."
 }
 
-Write-Host "Seeded credential-free mirror at '$mirrorPath'."
+Set-Content `
+    -LiteralPath $repositoryUrlPath `
+    -Value $normalizedRemoteUrl `
+    -Encoding utf8 `
+    -NoNewline
 
+Write-Host "Seeded credential-free mirror at '$mirrorPath'."
