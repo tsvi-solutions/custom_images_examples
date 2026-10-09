@@ -173,17 +173,59 @@ Custom images are available for **GitHub-hosted larger runners**. The custom
 image can start from GitHub’s `windows-latest` image, but it is consumed through
 a named larger runner—not through the standard `windows-latest` label.
 
-1. Enable custom images in the organization or enterprise Actions policy.
-2. Create a GitHub-hosted larger runner with:
+> [!IMPORTANT]
+> This is the bootstrap step—**you do not need an existing custom image**.
+> Create the image-generation runner from GitHub's standard `windows-latest`
+> base image. The runner executes the image-build workflow, and the workflow's
+> `snapshot` keyword publishes your first custom image.
+
+> [!WARNING]
+> Create this runner from **organization settings**, not repository settings.
+> Repository **Settings → Actions → Runners** only offers self-hosted runners.
+> GitHub-hosted larger runners require a **GitHub Team** or
+> **GitHub Enterprise Cloud** organization plan. Custom images cannot be built
+> with a standard `windows-latest` job or a self-hosted runner.
+
+```mermaid
+flowchart LR
+    Base["GitHub-owned<br/>windows-latest"]
+    Builder["Image-generation<br/>larger runner"]
+    Workflow["Build Windows<br/>monorepo image"]
+    First["First custom image<br/>windows-monorepo-sqlserver"]
+
+    Base -->|"create runner"| Builder
+    Builder -->|"runs workflow"| Workflow
+    Workflow -->|"snapshot"| First
+
+    classDef base fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:2px;
+    classDef builder fill:#fff8c5,color:#633c01,stroke:#bf8700,stroke-width:2px;
+    classDef workflow fill:#fbefff,color:#5a1e75,stroke:#8250df,stroke-width:2px;
+    classDef image fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:3px;
+
+    class Base base;
+    class Builder builder;
+    class Workflow workflow;
+    class First image;
+```
+
+1. Open the organization runner page:
+   `https://github.com/organizations/YOUR-ORGANIZATION/settings/actions/runners`.
+   For this repository, use
+   `https://github.com/organizations/tsvi-solutions/settings/actions/runners`.
+2. Click **New runner → New GitHub-hosted runner**. If that choice is absent,
+   verify that you are an organization owner and that the organization uses
+   GitHub Team or GitHub Enterprise Cloud.
+3. Enable custom images in the organization or enterprise Actions policy.
+4. Create the GitHub-hosted larger runner with:
    - **Platform:** Windows x64
    - **Base image:** GitHub-owned `windows-latest`
    - **Generate custom images:** enabled
    - **Runner group:** one that can access this repository
-3. Name it `windows-image-generation`, or set the organization variable
+5. Name it `windows-image-generation`, or set the organization variable
    `IMAGE_GENERATION_RUNNER` to the actual runner name.
-4. Optionally set `BENCHMARK_REPOSITORY` to an `owner/repository`. It defaults
+6. Optionally set `BENCHMARK_REPOSITORY` to an `owner/repository`. It defaults
    to `llvm/llvm-project`.
-5. Run **Build Windows monorepo image** from the Actions tab.
+7. Run **Build Windows monorepo image** from the Actions tab.
 
 The [image workflow](.github/workflows/build-custom-image.yml) installs and
 validates SQL Server, creates and verifies the Git mirror, checks for captured

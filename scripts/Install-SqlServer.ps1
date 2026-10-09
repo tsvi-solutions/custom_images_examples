@@ -11,6 +11,34 @@ $serviceName = if ($InstanceName -eq "MSSQLSERVER") {
     "MSSQL`$$InstanceName"
 }
 
+function Invoke-ProcessWithHeartbeat {
+    param(
+        [Parameter(Mandatory)]
+        [string]$FilePath,
+
+        [Parameter(Mandatory)]
+        [string[]]$ArgumentList,
+
+        [Parameter(Mandatory)]
+        [string]$Activity
+    )
+
+    $process = Start-Process `
+        -FilePath $FilePath `
+        -ArgumentList $ArgumentList `
+        -PassThru `
+        -NoNewWindow
+    $timer = [System.Diagnostics.Stopwatch]::StartNew()
+
+    while (-not $process.WaitForExit(30000)) {
+        Write-Host "$Activity is still running ($([math]::Round($timer.Elapsed.TotalMinutes, 1)) minutes elapsed)."
+    }
+
+    $timer.Stop()
+    Write-Host "$Activity completed in $([math]::Round($timer.Elapsed.TotalMinutes, 1)) minutes."
+    return $process.ExitCode
+}
+
 if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) {
     Write-Host "SQL Server instance '$InstanceName' is already installed."
     Set-Service -Name $serviceName -StartupType Automatic
@@ -39,15 +67,13 @@ try {
         "/MEDIATYPE=Cab"
         "/QUIET"
     )
-    $download = Start-Process `
+    $downloadExitCode = Invoke-ProcessWithHeartbeat `
         -FilePath $installerPath `
         -ArgumentList $downloadArguments `
-        -Wait `
-        -PassThru `
-        -NoNewWindow
+        -Activity "SQL Server media download"
 
-    if ($download.ExitCode -ne 0) {
-        throw "SQL Server media download failed with exit code $($download.ExitCode)."
+    if ($downloadExitCode -ne 0) {
+        throw "SQL Server media download failed with exit code $downloadExitCode."
     }
 
     $setup = Get-ChildItem `
@@ -74,15 +100,23 @@ try {
         "/IACCEPTSQLSERVERLICENSETERMS"
     )
 
-    $process = Start-Process `
+    $setupExitCode = Invoke-ProcessWithHeartbeat `
         -FilePath $setup.FullName `
         -ArgumentList $setupArguments `
-        -Wait `
-        -PassThru `
-        -NoNewWindow
+        -Activity "SQL Server setup"
 
-    if ($process.ExitCode -notin 0, 3010) {
-        throw "SQL Server installer failed with exit code $($process.ExitCode)."
+    if ($setupExitCode -notin 0, 3010) {
+        $summaryPath = Get-ChildItem `
+            -Path "C:\Program Files\Microsoft SQL Server" `
+            -Filter Summary.txt `
+            -Recurse `
+            -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+        if ($summaryPath) {
+            Write-Error (Get-Content -LiteralPath $summaryPath.FullName -Raw)
+        }
+        throw "SQL Server installer failed with exit code $setupExitCode."
     }
 
     Set-Service -Name $serviceName -StartupType Automatic
