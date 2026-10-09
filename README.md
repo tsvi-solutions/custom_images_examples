@@ -136,19 +136,17 @@ sequenceDiagram
     participant Job as Workflow job
     participant GitHub as GitHub repository
 
-    rect rgb(251, 239, 255)
-        Build->>GitHub: Full-history checkout
-        Build->>Mirror: Create credential-free bare mirror
-        Build->>Build: Install and validate SQL Server
-        Build->>Snapshot: Capture with native snapshot keyword
-    end
+    Note over Build,Snapshot: IMAGE BUILD · prepare once
+    Build->>GitHub: Full-history checkout
+    Build->>Mirror: Create credential-free bare mirror
+    Build->>Build: Install and validate SQL Server
+    Build->>Snapshot: Capture with native snapshot keyword
 
-    rect rgb(218, 251, 225)
-        Snapshot-->>Job: Start pre-warmed runner
-        Job->>Mirror: Create local reference clone
-        Job->>GitHub: Fetch only missing objects and requested ref
-        Job->>Job: Query preinstalled SQL Server
-    end
+    Note over Snapshot,GitHub: WORKFLOW JOB · reuse on every run
+    Snapshot-->>Job: Start pre-warmed runner
+    Job->>Mirror: Create local reference clone
+    Job->>GitHub: Fetch only missing objects and requested ref
+    Job->>Job: Query preinstalled SQL Server
 ```
 
 ### Why this strategy?
