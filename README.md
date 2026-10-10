@@ -315,6 +315,8 @@ the custom image.
 Enable the comparison workflow's optional telemetry input to collect CPU,
 memory, disk, network, and process evidence with the
 [Runner Telemetry Action](https://github.com/marketplace/actions/runner-telemetry-action).
+Telemetry explains resource behavior; the workflow's explicit timers and
+Git-to-SQL proof remain the source of the before/after result.
 
 </details>
 

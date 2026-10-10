@@ -9,7 +9,9 @@ name: Compare before and after custom image
 on:
   workflow_dispatch:
     inputs:
-      # Telemetry is opt-in so monitoring does not distract from the core demo.
+      # Telemetry is opt-in and complements the explicit benchmark timers. The
+      # action reports resource usage but does not expose the exact checkout,
+      # SQL-readiness, commit, and file-count outputs compared by the final job.
       telemetry:
         description: Collect CPU, memory, disk, network, and process telemetry
         type: boolean
@@ -93,7 +95,7 @@ jobs:
 
       - name: Start optional runner telemetry
         if: ${{ inputs.telemetry }}
-        uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # v1
+        uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # main on 2026-10-09
 
       # The headline timer begins immediately before the work that the custom
       # image is designed to remove.
@@ -217,7 +219,7 @@ jobs:
 
       - name: Publish optional runner telemetry
         if: ${{ always() && inputs.telemetry }}
-        uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # v1
+        uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # main on 2026-10-09
         with:
           mode: stop
 
@@ -269,7 +271,7 @@ jobs:
 
       - name: Start optional runner telemetry
         if: ${{ inputs.telemetry }}
-        uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # v1
+        uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # main on 2026-10-09
 
       # Activation is a same-volume move plus metadata-only HEAD detachment. It
       # avoids copying or rescanning roughly 187,000 files.
@@ -405,7 +407,7 @@ jobs:
 
       - name: Publish optional runner telemetry
         if: ${{ always() && inputs.telemetry }}
-        uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # v1
+        uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # main on 2026-10-09
         with:
           mode: stop
 
