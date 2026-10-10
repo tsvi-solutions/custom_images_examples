@@ -180,6 +180,10 @@ Changing `BENCHMARK_REPOSITORY` requires rebuilding the image.
 <table>
 <tr>
 <td align="center" width="33%">
+<sub>PRIVATE REPOSITORY</sub>
+<h3>−$0.108 / run</h3>
+</td>
+<td align="center" width="33%">
 <sub>SAME 4-CORE RUNNER</sub>
 <h3>−$0.264 / run</h3>
 </td>
@@ -187,33 +191,32 @@ Changing `BENCHMARK_REPOSITORY` requires rebuilding the image.
 <sub>THIS PUBLIC DEMO</sub>
 <h3>+$0.022 / run</h3>
 </td>
-<td align="center" width="33%">
-<sub>25% BLOCKED @ $100/HOUR</sub>
-<h3>+$4.85 capacity</h3>
-</td>
 </tr>
 </table>
 
-### Scale across a month · paid-runner scenario
+### Scale across a month · private repository
 
-| Runs / month | Runner compute saved* | Engineering capacity recovered** |
+| Runs / month | Net runner compute saved* | Setup time removed** |
 |---:|---:|---:|
-| 25 | **$1.93** | **$121** |
-| 100 | **$21.73** | **$485** |
-| 1,000 | **$259.33** | **$4,850** |
-| 10,000 | **$2,635.33** | **$48,500** |
+| 50 | **$0.73** | **9.7 hours** |
+| 100 | **$6.13** | **19.4 hours** |
+| 1,000 | **$103.33** | **194 hours** |
+| 10,000 | **$1,075.33** | **1,940 hours** |
 
-> At **1,000 runs per month**, the model returns **$259/month in runner
-> compute** plus **$4,850/month in engineering capacity** before storage.
+> At **1,000 runs per month**, the model saves **$103/month in runner
+> compute** and removes **194 hours of aggregate setup time** before storage.
 
 <sub>
-* After $4.67/month image-build and canary compute; storage excluded.<br/>
-** One developer at $100/hour and 25% blocked time; not payroll reduction.
+* Compares private standard Windows after included minutes with the 4-core
+custom-image runner, then subtracts $4.67/month for image-build and canary
+compute. Storage is excluded.<br/>
+** Measured elapsed setup time across workflow runs—not developer hours or
+payroll savings.
 </sub>
 
 > [!WARNING]
 > Custom-image storage is billed separately and is not included above.
-> Recovered engineering capacity is not guaranteed payroll reduction.
+> Setup time is intentionally not assigned a dollar value.
 
 <details>
 <summary><strong>Cost assumptions and break-even calculation</strong></summary>
@@ -229,23 +232,17 @@ and each job rounds up to a whole minute.
 | Public repository used by this demo | $0.000 | $0.022 | **$0.022 added** |
 
 The observed weekly image build costs about **$4.00/month** and the daily
-canary about **$0.67/month**. Maintenance compute therefore breaks even at
-approximately **18 equivalent 4-core jobs/month**, before storage.
+canary about **$0.67/month**. Before storage, maintenance compute breaks even
+at approximately **44 private standard-Windows jobs/month**, or **18 jobs**
+when both paths already require the same 4-core larger runner.
 
-```text
-engineering capacity value =
-  time saved in hours
-  × loaded hourly cost
-  × genuinely blocked fraction
-  × affected developers
-  × workflow runs
-```
-
-| Blocked fraction at $100/hour | Capacity value/run |
-|---:|---:|
-| 25% | **$4.85** |
-| 50% | **$9.70** |
-| 100% | **$19.40** |
+This README does not convert elapsed CI time directly into developer dollars.
+The
+[SPACE framework](https://www.microsoft.com/en-us/research/publication/the-space-of-developer-productivity-theres-more-to-it-than-you-think/)
+from Microsoft Research and ACM describes developer productivity as
+multidimensional and cautions against representing it with one metric. Teams
+can apply their own observed blocked-time rate, staffing model, and loaded
+cost separately.
 
 Custom-image storage accrues by retained GB-hours. Apply the rate and included
 allowance shown in the

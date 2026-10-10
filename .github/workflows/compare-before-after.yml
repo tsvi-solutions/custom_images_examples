@@ -536,19 +536,23 @@ jobs:
 
           # GitHub bills Windows 4-core larger runners per started minute. This
           # comparison intentionally keeps public-demo cost separate from the
-          # hypothetical same-runner compute saving.
+          # hypothetical same-runner and private-repository comparisons.
           $runnerRate = 0.022
+          $standardWindowsRate = 0.010
           $beforeBillableMinutes = [math]::Ceiling($beforeObserved / 60)
           $afterBillableMinutes = [math]::Ceiling($afterObserved / 60)
           $beforeEquivalentCost = $beforeBillableMinutes * $runnerRate
+          $beforePrivateCost = $beforeBillableMinutes * $standardWindowsRate
           $afterRunnerCost = $afterBillableMinutes * $runnerRate
           $computeSavings = $beforeEquivalentCost - $afterRunnerCost
-          $capacityValue = [math]::Max(0, $saved / 3600 * 100)
+          $privateSavings = $beforePrivateCost - $afterRunnerCost
+          $setupHoursPerHundred = [math]::Max(0, $saved / 3600 * 100)
           $computeSavingsText = '$' + $computeSavings.ToString("0.000", $culture)
+          $privateSavingsText = '$' + $privateSavings.ToString("0.000", $culture)
           $afterRunnerCostText = '+$' + $afterRunnerCost.ToString("0.000", $culture)
-          $capacityValueText = '$' + $capacityValue.ToString("0.00", $culture)
+          $setupHoursText = $setupHoursPerHundred.ToString("0.00", $culture) + ' hours'
           $runnerRateText = '$' + $runnerRate.ToString("0.000", $culture)
-          $engineeringRateText = '$100/hour'
+          $standardWindowsRateText = '$' + $standardWindowsRate.ToString("0.000", $culture)
 
           # Timing is meaningful only if both jobs produced the same checkout.
           # Fail instead of publishing attractive but invalid numbers.
@@ -618,12 +622,14 @@ jobs:
           | Lens | Value | Meaning |
           |---|---:|---|
           | Same Windows 4-core larger runner | **$computeSavingsText saved** | $beforeBillableMinutes billed min → $afterBillableMinutes billed min at $runnerRateText/min |
+          | Private standard Windows | **$privateSavingsText saved** | $beforeBillableMinutes billed min at $standardWindowsRateText/min → custom runner |
           | This public demo | **$afterRunnerCostText** | Standard runner is free; custom larger runner is billed |
-          | Engineering capacity at $engineeringRateText | **$capacityValueText recovered** | Assumes the entire saved wait blocked one developer |
+          | 100 equivalent runs | **$setupHoursText removed** | Aggregate measured setup time; not developer hours or payroll savings |
 
           > Compute estimate only. Image-build compute and custom-image storage
-          > are excluded. ✅ Both jobs verified the same Git commit, file count,
-          > and Git → SQL workload.
+          > are excluded. Setup time is intentionally not assigned a dollar
+          > value. ✅ Both jobs verified the same Git commit, file count, and
+          > Git → SQL workload.
 
           <details>
           <summary><strong>Full timing, proof, and methodology</strong></summary>
