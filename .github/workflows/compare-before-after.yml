@@ -20,18 +20,24 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       sha: ${{ steps.revision.outputs.sha }}
+      resolve_seconds: ${{ steps.revision.outputs.elapsed_seconds }}
 
     steps:
       - name: Resolve benchmark HEAD
         id: revision
-        shell: bash
+        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.BENCHMARK_TOKEN || github.token }}
         run: |
-          sha="$(gh api "repos/${BENCHMARK_REPOSITORY}/commits/HEAD" --jq .sha)"
-          test -n "$sha"
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "Pinned ${BENCHMARK_REPOSITORY} at ${sha}"
+          $timer = [System.Diagnostics.Stopwatch]::StartNew()
+          $sha = gh api "repos/$env:BENCHMARK_REPOSITORY/commits/HEAD" --jq .sha
+          if ($LASTEXITCODE -ne 0 -or -not $sha) {
+            throw "Unable to resolve the benchmark repository HEAD."
+          }
+          $timer.Stop()
+          "sha=$sha" >> $env:GITHUB_OUTPUT
+          "elapsed_seconds=$($timer.Elapsed.TotalSeconds.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture))" >> $env:GITHUB_OUTPUT
+          Write-Host "Pinned $env:BENCHMARK_REPOSITORY at $sha."
 
   before:
     name: Before - windows-latest
@@ -39,7 +45,9 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 120
     outputs:
+      tooling_seconds: ${{ steps.tooling_timing.outputs.elapsed_seconds }}
       checkout_seconds: ${{ steps.checkout_timing.outputs.elapsed_seconds }}
+      checkout_action_seconds: ${{ steps.checkout_timing.outputs.elapsed_seconds }}
       sql_seconds: ${{ steps.sql_timing.outputs.elapsed_seconds }}
       total_seconds: ${{ steps.total_timing.outputs.elapsed_seconds }}
       workload_seconds: ${{ steps.workload.outputs.elapsed_seconds }}
@@ -47,11 +55,29 @@ jobs:
       tracked_files: ${{ steps.workload.outputs.tracked_files }}
 
     steps:
+      - name: Start tooling checkout timer
+        shell: pwsh
+        run: |
+          [System.Diagnostics.Stopwatch]::GetTimestamp() |
+            Set-Content -LiteralPath "$env:RUNNER_TEMP\tooling-start.txt"
+
       - name: Check out the example tooling
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
           path: example-source
+
+      - name: Record tooling checkout duration
+        id: tooling_timing
+        shell: pwsh
+        run: |
+          $start = [long](Get-Content -LiteralPath "$env:RUNNER_TEMP\tooling-start.txt")
+          $ticks = [System.Diagnostics.Stopwatch]::GetTimestamp() - $start
+          $seconds = [math]::Round(
+            $ticks / [System.Diagnostics.Stopwatch]::Frequency,
+            2
+          )
+          "elapsed_seconds=$seconds" >> $env:GITHUB_OUTPUT
 
       - name: Start optional runner telemetry
         if: ${{ inputs.telemetry }}
@@ -132,8 +158,33 @@ jobs:
           "tracked_files=$($result.TrackedFiles)" >> $env:GITHUB_OUTPUT
           $result | Format-List
 
+          $readySeconds = [double]$env:READY_SECONDS
+          $readyMinutes = [math]::Floor($readySeconds / 60)
+          $readyRemainder = $readySeconds - ($readyMinutes * 60)
+          $readyRounded = [math]::Round($readyRemainder)
+          if ($readyRounded -eq 60) {
+            $readyMinutes++
+            $readyRounded = 0
+          }
+          $readyDisplay = "$readyMinutes min $readyRounded sec"
+          $workloadDisplay = $timer.Elapsed.TotalSeconds.ToString(
+            "0.00",
+            [Globalization.CultureInfo]::InvariantCulture
+          )
+
           @"
-          ## Before: runner ready after $env:READY_SECONDS seconds
+          ## 🔴 Before · Standard `windows-latest`
+
+          > ### Ready in $readyDisplay
+
+          | Readiness proof | Result |
+          |---|---:|
+          | Pinned Git commit | ``$($result.CommitSha.Substring(0, 12))`` |
+          | Tracked files | $($result.TrackedFiles.ToString("N0")) |
+          | Git → SQL proof | ✅ Passed in ${workloadDisplay}s |
+
+          <details>
+          <summary>Commands executed</summary>
 
           ``````powershell
           git -C benchmark-source rev-parse HEAD
@@ -141,9 +192,7 @@ jobs:
           ./scripts/Invoke-ExampleWorkload.ps1
           ``````
 
-          Git commit ``$($result.CommitSha)`` with **$($result.TrackedFiles)**
-          tracked files was inserted into SQL Server and queried back in
-          **$($timer.Elapsed.TotalSeconds.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture)) seconds**.
+          </details>
           "@ >> $env:GITHUB_STEP_SUMMARY
 
       - name: Publish optional runner telemetry
@@ -158,7 +207,10 @@ jobs:
     runs-on: ${{ vars.CUSTOM_IMAGE_RUNNER || 'windows-monorepo-sqlserver-runner' }}
     timeout-minutes: 30
     outputs:
+      tooling_seconds: ${{ steps.tooling_timing.outputs.elapsed_seconds }}
+      cache_init_seconds: ${{ steps.initialize.outputs.elapsed_seconds }}
       checkout_seconds: ${{ steps.checkout_timing.outputs.elapsed_seconds }}
+      checkout_action_seconds: ${{ steps.checkout_timing.outputs.action_seconds }}
       sql_seconds: ${{ steps.sql_timing.outputs.elapsed_seconds }}
       total_seconds: ${{ steps.total_timing.outputs.elapsed_seconds }}
       workload_seconds: ${{ steps.workload.outputs.elapsed_seconds }}
@@ -166,11 +218,29 @@ jobs:
       tracked_files: ${{ steps.workload.outputs.tracked_files }}
 
     steps:
+      - name: Start tooling checkout timer
+        shell: pwsh
+        run: |
+          [System.Diagnostics.Stopwatch]::GetTimestamp() |
+            Set-Content -LiteralPath "$env:RUNNER_TEMP\tooling-start.txt"
+
       - name: Check out the example tooling
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
           path: example-source
+
+      - name: Record tooling checkout duration
+        id: tooling_timing
+        shell: pwsh
+        run: |
+          $start = [long](Get-Content -LiteralPath "$env:RUNNER_TEMP\tooling-start.txt")
+          $ticks = [System.Diagnostics.Stopwatch]::GetTimestamp() - $start
+          $seconds = [math]::Round(
+            $ticks / [System.Diagnostics.Stopwatch]::Frequency,
+            2
+          )
+          "elapsed_seconds=$seconds" >> $env:GITHUB_OUTPUT
 
       - name: Start optional runner telemetry
         if: ${{ inputs.telemetry }}
@@ -214,6 +284,7 @@ jobs:
             [double]$env:INITIALIZE_SECONDS + $checkout,
             2
           )
+          "action_seconds=$([math]::Round($checkout, 2))" >> $env:GITHUB_OUTPUT
           "elapsed_seconds=$seconds" >> $env:GITHUB_OUTPUT
 
       - name: Verify preinstalled SQL Server
@@ -259,8 +330,33 @@ jobs:
           "tracked_files=$($result.TrackedFiles)" >> $env:GITHUB_OUTPUT
           $result | Format-List
 
+          $readySeconds = [double]$env:READY_SECONDS
+          $readyMinutes = [math]::Floor($readySeconds / 60)
+          $readyRemainder = $readySeconds - ($readyMinutes * 60)
+          $readyRounded = [math]::Round($readyRemainder)
+          if ($readyRounded -eq 60) {
+            $readyMinutes++
+            $readyRounded = 0
+          }
+          $readyDisplay = "$readyMinutes min $readyRounded sec"
+          $workloadDisplay = $timer.Elapsed.TotalSeconds.ToString(
+            "0.00",
+            [Globalization.CultureInfo]::InvariantCulture
+          )
+
           @"
-          ## After: runner ready after $env:READY_SECONDS seconds
+          ## 🟢 After · Custom image
+
+          > ### Ready in $readyDisplay
+
+          | Readiness proof | Result |
+          |---|---:|
+          | Pinned Git commit | ``$($result.CommitSha.Substring(0, 12))`` |
+          | Tracked files | $($result.TrackedFiles.ToString("N0")) |
+          | Git → SQL proof | ✅ Passed in ${workloadDisplay}s |
+
+          <details>
+          <summary>Commands executed</summary>
 
           ``````powershell
           git -C benchmark-source rev-parse HEAD
@@ -268,9 +364,7 @@ jobs:
           ./scripts/Invoke-ExampleWorkload.ps1
           ``````
 
-          Git commit ``$($result.CommitSha)`` with **$($result.TrackedFiles)**
-          tracked files was inserted into SQL Server and queried back in
-          **$($timer.Elapsed.TotalSeconds.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture)) seconds**.
+          </details>
           "@ >> $env:GITHUB_STEP_SUMMARY
 
       - name: Publish optional runner telemetry
@@ -282,13 +376,20 @@ jobs:
   comparison:
     name: Before versus after
     needs:
+      - benchmark
       - before
       - after
     runs-on: ubuntu-latest
     env:
       BENCHMARK_REPOSITORY: ${{ vars.BENCHMARK_REPOSITORY || 'llvm/llvm-project' }}
+      RESOLVE_SECONDS: ${{ needs.benchmark.outputs.resolve_seconds }}
+      BEFORE_TOOLING: ${{ needs.before.outputs.tooling_seconds }}
+      AFTER_TOOLING: ${{ needs.after.outputs.tooling_seconds }}
+      AFTER_CACHE_INIT: ${{ needs.after.outputs.cache_init_seconds }}
       BEFORE_CHECKOUT: ${{ needs.before.outputs.checkout_seconds }}
       AFTER_CHECKOUT: ${{ needs.after.outputs.checkout_seconds }}
+      BEFORE_CHECKOUT_ACTION: ${{ needs.before.outputs.checkout_action_seconds }}
+      AFTER_CHECKOUT_ACTION: ${{ needs.after.outputs.checkout_action_seconds }}
       BEFORE_SQL: ${{ needs.before.outputs.sql_seconds }}
       AFTER_SQL: ${{ needs.after.outputs.sql_seconds }}
       BEFORE_TOTAL: ${{ needs.before.outputs.total_seconds }}
@@ -304,25 +405,96 @@ jobs:
       - name: Publish comparison
         shell: pwsh
         run: |
-          $beforeTotal = [double]::Parse(
-            $env:BEFORE_TOTAL,
-            [Globalization.CultureInfo]::InvariantCulture
-          )
-          $afterTotal = [double]::Parse(
-            $env:AFTER_TOTAL,
-            [Globalization.CultureInfo]::InvariantCulture
-          )
+          $culture = [Globalization.CultureInfo]::InvariantCulture
+
+          function Convert-ToSeconds {
+            param([string]$Value)
+            return [double]::Parse($Value, $culture)
+          }
+
+          function Format-Duration {
+            param([double]$Seconds)
+            $minutes = [math]::Floor($Seconds / 60)
+            $remainder = $Seconds - ($minutes * 60)
+            $secondsText = if ($Seconds -lt 10) {
+              $remainder.ToString("0.00", $culture)
+            } else {
+              $rounded = [math]::Round($remainder)
+              if ($rounded -eq 60) {
+                $minutes++
+                $rounded = 0
+              }
+              $rounded.ToString("0", $culture)
+            }
+            return "$minutes min $secondsText sec"
+          }
+
+          function Format-Delta {
+            param([double]$Seconds)
+            if ($Seconds -lt 0) {
+              return "-$(Format-Duration ([math]::Abs($Seconds)))"
+            }
+            return Format-Duration $Seconds
+          }
+
+          function Get-Reduction {
+            param(
+              [double]$Before,
+              [double]$After
+            )
+            if ($Before -le 0) {
+              return 0
+            }
+            return [math]::Round((1 - ($After / $Before)) * 100, 1)
+          }
+
+          $resolveSeconds = Convert-ToSeconds $env:RESOLVE_SECONDS
+          $beforeTooling = Convert-ToSeconds $env:BEFORE_TOOLING
+          $afterTooling = Convert-ToSeconds $env:AFTER_TOOLING
+          $afterCacheInit = Convert-ToSeconds $env:AFTER_CACHE_INIT
+          $beforeCheckout = Convert-ToSeconds $env:BEFORE_CHECKOUT
+          $afterCheckout = Convert-ToSeconds $env:AFTER_CHECKOUT
+          $beforeCheckoutAction = Convert-ToSeconds $env:BEFORE_CHECKOUT_ACTION
+          $afterCheckoutAction = Convert-ToSeconds $env:AFTER_CHECKOUT_ACTION
+          $beforeSql = Convert-ToSeconds $env:BEFORE_SQL
+          $afterSql = Convert-ToSeconds $env:AFTER_SQL
+          $beforeTotal = Convert-ToSeconds $env:BEFORE_TOTAL
+          $afterTotal = Convert-ToSeconds $env:AFTER_TOTAL
+          $beforeWorkload = Convert-ToSeconds $env:BEFORE_WORKLOAD
+          $afterWorkload = Convert-ToSeconds $env:AFTER_WORKLOAD
+
           $saved = [math]::Round($beforeTotal - $afterTotal, 2)
           $speedup = if ($afterTotal -gt 0) {
             [math]::Round($beforeTotal / $afterTotal, 1)
           } else {
             "n/a"
           }
-          $percent = if ($beforeTotal -gt 0) {
-            [math]::Round((1 - ($afterTotal / $beforeTotal)) * 100, 1)
-          } else {
-            0
-          }
+          $percent = Get-Reduction $beforeTotal $afterTotal
+          $checkoutSaved = [math]::Round($beforeCheckout - $afterCheckout, 2)
+          $sqlSaved = [math]::Round($beforeSql - $afterSql, 2)
+          $checkoutReduction = Get-Reduction $beforeCheckout $afterCheckout
+          $sqlReduction = Get-Reduction $beforeSql $afterSql
+          $chartMax = [math]::Ceiling($beforeTotal / 100) * 100
+          $beforeOverhead = [math]::Max(
+            0,
+            $beforeTotal - $beforeCheckout - $beforeSql
+          )
+          $afterOverhead = [math]::Max(
+            0,
+            $afterTotal - $afterCheckout - $afterSql
+          )
+          $beforeObserved = $beforeTooling + $beforeTotal + $beforeWorkload
+          $afterObserved = $afterTooling + $afterTotal + $afterWorkload
+          $overheadSaved = [math]::Max(
+            0,
+            [math]::Round($beforeOverhead - $afterOverhead, 2)
+          )
+          $checkoutSavedForChart = [math]::Max(0, $checkoutSaved)
+          $sqlSavedForChart = [math]::Max(0, $sqlSaved)
+          $headlineLabel = if ($saved -ge 0) { "TIME SAVED" } else { "TIME ADDED" }
+          $headlineDuration = Format-Duration ([math]::Abs($saved))
+          $runUrl = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+
           if ($env:BEFORE_COMMIT -ne $env:AFTER_COMMIT) {
             throw "Before and after used different benchmark commits."
           }
@@ -331,24 +503,149 @@ jobs:
           }
 
           @"
-          # Custom image: before and after
+          <div align="center">
 
-          Benchmark repository: **$env:BENCHMARK_REPOSITORY**
+          # 🚀 Custom Image Benchmark
 
-          | Measurement | Before: **windows-latest** | After: custom image |
+          ### From cold setup to a ready-to-work Windows runner
+
+          **$env:BENCHMARK_REPOSITORY** ·
+          ``$($env:BEFORE_COMMIT.Substring(0, 12))`` ·
+          $(([int]$env:BEFORE_FILES).ToString("N0")) tracked files ·
+          [Run #$env:GITHUB_RUN_NUMBER]($runUrl)
+
+          </div>
+
+          ---
+
+          ## 🏆 Executive result
+
+          <table>
+          <tr>
+          <td align="center">
+          <strong>⏱️ $headlineLabel</strong><br>
+          <h2>$headlineDuration</h2>
+          </td>
+          <td align="center">
+          <strong>📉 SETUP REDUCTION</strong><br>
+          <h2>$percent%</h2>
+          </td>
+          <td align="center">
+          <strong>⚡ SPEEDUP</strong><br>
+          <h2>${speedup}×</h2>
+          </td>
+          <td align="center">
+          <strong>✅ DEPENDENT WORKLOAD</strong><br>
+          <h2>Passed</h2>
+          </td>
+          </tr>
+          </table>
+
+          > **The custom image reached a usable Git + SQL environment in
+          > $(Format-Duration $afterTotal), compared with
+          > $(Format-Duration $beforeTotal) on standard **windows-latest**.**
+
+          ## 📊 Visual overview
+
+          ``````mermaid
+          xychart-beta
+              title "Seconds until ready"
+              x-axis ["Before", "Custom image"]
+              y-axis "Seconds" 0 --> $chartMax
+              bar [$beforeTotal, $afterTotal]
+          ``````
+
+          ### Where the saved time came from
+
+          ``````mermaid
+          pie showData title Time saved by phase
+              "Git checkout" : $checkoutSavedForChart
+              "SQL Server" : $sqlSavedForChart
+              "Bookkeeping" : $overheadSaved
+          ``````
+
+          ### At a glance
+
+          | | 🔴 Before | 🟢 After |
           |---|---:|---:|
-          | Full-history checkout | $env:BEFORE_CHECKOUT s | $env:AFTER_CHECKOUT s |
-          | SQL Server install/readiness | $env:BEFORE_SQL s | $env:AFTER_SQL s |
-          | **Ready to execute dependent commands** | **$env:BEFORE_TOTAL s** | **$env:AFTER_TOTAL s** |
-          | Git + SQL proof workload | $env:BEFORE_WORKLOAD s | $env:AFTER_WORKLOAD s |
+          | Ready | **$(Format-Duration $beforeTotal)** | **$(Format-Duration $afterTotal)** |
+          | Checkout | $(Format-Duration $beforeCheckout) | $(Format-Duration $afterCheckout) |
+          | SQL | $(Format-Duration $beforeSql) | $(Format-Duration $afterSql) |
+          | Proof | ✅ | ✅ |
 
-          **Result:** the custom image saved **$saved seconds** (**$percent%**) and
-          completed the measured setup **${speedup}x faster**.
+          ## ⏱️ Before vs. after
 
-          Both runners then read commit `$env:BEFORE_COMMIT` with
-          **$env:BEFORE_FILES tracked files**, inserted that evidence into SQL
-          Server, and queried it back successfully.
+          | Phase | 🔴 Before | 🟢 Custom image | Time saved | Reduction |
+          |---|---:|---:|---:|---:|
+          | Git checkout | $(Format-Duration $beforeCheckout) | $(Format-Duration $afterCheckout) | $(Format-Delta $checkoutSaved) | $checkoutReduction% |
+          | SQL Server readiness | $(Format-Duration $beforeSql) | $(Format-Duration $afterSql) | $(Format-Delta $sqlSaved) | $sqlReduction% |
+          | **Ready for dependent commands** | **$(Format-Duration $beforeTotal)** | **$(Format-Duration $afterTotal)** | **$(Format-Delta $saved)** | **$percent%** |
+          | Proof workload | $(Format-Duration $beforeWorkload) | $(Format-Duration $afterWorkload) | — | ✅ Both passed |
 
-          Runner queue and provisioning time are intentionally excluded because
-          the timer starts in the first step of each job.
+          ## 🔎 Full step breakdown
+
+          Benchmark revision resolution was shared by both paths and took
+          **$(Format-Duration $resolveSeconds)**.
+
+          | # | Workflow phase | 🔴 Before | 🟢 Custom image | In time-to-ready? |
+          |---:|---|---:|---:|:---:|
+          | 1 | Example tooling checkout | $(Format-Duration $beforeTooling) | $(Format-Duration $afterTooling) | No |
+          | 2 | Initialize from image cache | — | $(Format-Duration $afterCacheInit) | Yes |
+          | 3 | Repository checkout action | $(Format-Duration $beforeCheckoutAction) | $(Format-Duration $afterCheckoutAction) | Yes |
+          | 4 | SQL Server install/readiness | $(Format-Duration $beforeSql) | $(Format-Duration $afterSql) | Yes |
+          | 5 | Timing and readiness bookkeeping | $(Format-Duration $beforeOverhead) | $(Format-Duration $afterOverhead) | Yes |
+          | 6 | Git → SQL proof workload | $(Format-Duration $beforeWorkload) | $(Format-Duration $afterWorkload) | No |
+          | | **Observed workflow path** | **$(Format-Duration $beforeObserved)** | **$(Format-Duration $afterObserved)** | |
+
+          ``````mermaid
+          flowchart LR
+              subgraph Before["🔴 BEFORE · windows-latest"]
+                  direction LR
+                  B1["Tooling<br/>$(Format-Duration $beforeTooling)"] -->
+                  B2["Full checkout<br/>$(Format-Duration $beforeCheckoutAction)"] -->
+                  B3["Install SQL<br/>$(Format-Duration $beforeSql)"] -->
+                  B4["Bookkeeping<br/>$(Format-Duration $beforeOverhead)"] -->
+                  B5["Proof workload<br/>$(Format-Duration $beforeWorkload)"]
+              end
+
+              subgraph After["🟢 AFTER · custom image"]
+                  direction LR
+                  A1["Tooling<br/>$(Format-Duration $afterTooling)"] -->
+                  A2["Local cache init<br/>$(Format-Duration $afterCacheInit)"] -->
+                  A3["Delta checkout<br/>$(Format-Duration $afterCheckoutAction)"] -->
+                  A4["SQL ready<br/>$(Format-Duration $afterSql)"] -->
+                  A5["Bookkeeping<br/>$(Format-Duration $afterOverhead)"] -->
+                  A6["Proof workload<br/>$(Format-Duration $afterWorkload)"]
+              end
+
+              classDef before fill:#ffebe9,color:#82071e,stroke:#cf222e,stroke-width:2px;
+              classDef after fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:2px;
+              class B1,B2,B3,B4,B5 before;
+              class A1,A2,A3,A4,A5,A6 after;
+          ``````
+
+          ## ✅ Equivalent workload verified
+
+          | Check | Evidence |
+          |---|---|
+          | Repository revision | ``$env:BEFORE_COMMIT`` |
+          | Tracked files | $(([int]$env:BEFORE_FILES).ToString("N0")) on both runners |
+          | Git dependency | Commit and file list read successfully |
+          | SQL dependency | Evidence inserted and queried back successfully |
+          | Cache preservation | Existing object store accepted by **actions/checkout** |
+
+          <details>
+          <summary><strong>Methodology and exclusions</strong></summary>
+
+          - Both jobs check out the same pinned commit with full history.
+          - The timer starts immediately before repository setup.
+          - Time-to-ready ends after SQL Server answers a query.
+          - The proof workload runs after the timer and validates both dependencies.
+          - Runner queue and VM provisioning time are excluded.
+          - GitHub's internal **Set up job** and post-action cleanup remain
+            visible in the native job timeline but are outside the instrumented
+            workflow path above.
+
+          </details>
+
           "@ >> $env:GITHUB_STEP_SUMMARY

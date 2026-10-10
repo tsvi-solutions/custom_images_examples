@@ -96,17 +96,26 @@ flowchart LR
     class Result result;
 ```
 
-### The expected shape of the result
+### ✅ Verified result
 
-The workflow writes the real values from each run to the GitHub Actions job
-summary:
+The first validated comparison ran against `llvm/llvm-project` at commit
+`d7b282cbfe7b8e6653beaf9159b2f8ce888cedaa` with **186,973 tracked files**:
 
-| Measurement | 🔴 Before: `windows-latest` | 🟢 After: custom image |
-|---|---:|---:|
-| Full-history checkout | Complete network clone | Local objects + small delta |
-| SQL Server setup | Download + install + readiness | Readiness check only |
-| **Total measured setup** | **Cold path** | **Pre-warmed path** |
-| Result | Baseline | Seconds saved, percentage reduction, and speedup |
+| Measurement | 🔴 Before: `windows-latest` | 🟢 After: custom image | Improvement |
+|---|---:|---:|---:|
+| Full-history checkout | 9 min 31 sec | 3 min 27 sec | 6 min 04 sec saved |
+| SQL Server setup/readiness | 2 min 54 sec | 0 min 0.59 sec | 2 min 54 sec saved |
+| **Ready to execute dependent commands** | **12 min 26 sec** | **3 min 28 sec** | **8 min 58 sec saved** |
+| Git + SQL proof workload | 0 min 0.80 sec | 0 min 0.42 sec | Both passed |
+
+> **72.1% less setup time · 3.6× faster to a usable runner**
+
+[View the successful benchmark run →](https://github.com/tsvi-solutions/custom_images_examples/actions/runs/38059867565)
+
+The warm checkout still materializes the requested working tree—nearly 187,000
+files in this run—but it reuses the image's Git object store. The validated log
+contains no `Deleting the contents` event, proving that `actions/checkout`
+preserved the pre-seeded clone.
 
 The benchmark does **not** inflate this example repository with generated
 files. By default, it performs a real full-history checkout of
@@ -286,6 +295,8 @@ total measured setup duration
 seconds saved
 percentage reduction
 overall speedup
+full visual step-by-step timing breakdown
+premium GitHub Actions summary with metric cards and Mermaid charts
 ```
 
 At the end of both paths, the workflow runs the same dependent workload:
