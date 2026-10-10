@@ -64,14 +64,19 @@ if ($LASTEXITCODE -ne 0) {
 & git -C $worktreePath config --unset-all http.https://github.com/.extraheader 2>$null
 & git -C $worktreePath config gc.auto 0
 
-$worktreeStatus = @(& git -C $worktreePath status --porcelain)
-if ($LASTEXITCODE -ne 0 -or $worktreeStatus.Count -ne 0) {
-    throw "The image's prepared worktree is not clean."
-}
-
 $cachedCommit = (& git -C $worktreePath rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or -not $cachedCommit) {
     throw "Unable to identify the prepared worktree commit."
+}
+
+& git -C $worktreePath checkout --detach $cachedCommit
+if ($LASTEXITCODE -ne 0) {
+    throw "Unable to detach the prepared worktree at '$cachedCommit'."
+}
+
+$worktreeStatus = @(& git -C $worktreePath status --porcelain)
+if ($LASTEXITCODE -ne 0 -or $worktreeStatus.Count -ne 0) {
+    throw "The image's prepared worktree is not clean."
 }
 
 Set-Content `

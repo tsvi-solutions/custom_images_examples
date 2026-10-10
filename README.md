@@ -151,6 +151,13 @@ latest `HEAD` at the start of the run. The bootstrap script normalizes the
 origin URL to the exact format expected by `actions/checkout`, preventing its
 repository-safety check from discarding the cache.
 
+The prepared worktree is captured with a detached `HEAD`, and the bootstrap
+enforces that state with a metadata-only ref update. This prevents
+`actions/checkout` from first detaching a branch and rescanning every tracked
+file. The custom-image path also sets `clean: false` because the image build
+already proves the tree is clean and each hosted runner VM is ephemeral.
+`actions/checkout` still force-checks the pinned target SHA.
+
 ```mermaid
 sequenceDiagram
     autonumber

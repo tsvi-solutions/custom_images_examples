@@ -93,6 +93,7 @@ jobs:
           path: benchmark-source
           fetch-depth: 0
           persist-credentials: false
+          clean: false
 
       - name: Validate SQL Server
         id: sql

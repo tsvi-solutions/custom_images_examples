@@ -73,6 +73,21 @@ if (-not $sourceRoot.Equals(
 [System.IO.Directory]::Move($preparedWorktreePath, $WorkspacePath)
 Write-Host "Activated the image's fully materialized worktree."
 
+$cachedCommit = (& git -C $WorkspacePath rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $cachedCommit) {
+    throw "Unable to identify the prepared worktree commit."
+}
+
+& git -C $WorkspacePath update-ref --no-deref HEAD $cachedCommit
+if ($LASTEXITCODE -ne 0) {
+    throw "Unable to detach the prepared worktree HEAD."
+}
+
+$symbolicHead = & git -C $WorkspacePath symbolic-ref --quiet HEAD 2>$null
+if ($LASTEXITCODE -eq 0 -or $symbolicHead) {
+    throw "The prepared worktree HEAD is still attached to a branch."
+}
+
 & git -C $WorkspacePath remote set-url origin $normalizedRemoteUrl
 if ($LASTEXITCODE -ne 0) {
     throw "Unable to configure the repository remote."

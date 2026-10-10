@@ -270,6 +270,7 @@ jobs:
           fetch-depth: 0
           path: benchmark-source
           persist-credentials: false
+          clean: false
 
       - name: Record warm checkout duration
         id: checkout_timing
