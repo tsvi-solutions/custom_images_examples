@@ -190,40 +190,34 @@ Changing `BENCHMARK_REPOSITORY` requires rebuilding the image.
 
 <sub>
 * Includes $4.67/month for image-build and canary compute. Assumes private
-standard Windows minutes are billable after plan allowances. Storage excluded.
+standard Windows minutes are billable after plan allowances. Storage varies
+with image retention and the allowance included in your plan.
 </sub>
 
 <details>
-<summary><strong>Cost assumptions and break-even calculation</strong></summary>
+<summary><strong>How this estimate is calculated</strong></summary>
 
-As of October 10, 2026, a Windows 4-core larger runner costs
-[$0.022/minute](https://docs.github.com/en/enterprise-cloud@latest/billing/reference/actions-runner-pricing),
-and each job rounds up to a whole minute.
+This is a runner-compute estimate, not a forecast of the final GitHub invoice.
 
-| Scenario | Without custom image | With custom image |
-|---|---:|---:|
-| Private standard Windows after included minutes | **$0.130** | **$0.022** |
-| Same 4-core larger runner | **$0.286** | **$0.022** |
-| Public repository used by this demo | **$0.000** | **$0.022** |
+| 1,000-run example | Calculation | Monthly cost |
+|---|---|---:|
+| Without custom image | 1,000 × 13 billed min × $0.010 | **$130.00** |
+| With custom image | 1,000 × 1 billed min × $0.022 + $4.67 maintenance | **$26.67** |
 
-The observed weekly image build costs about **$4.00/month** and the daily
-canary about **$0.67/month**. Before storage, maintenance compute breaks even
-at approximately **44 private standard-Windows jobs/month**, or **18 jobs**
-when both paths already require the same 4-core larger runner.
+The fixed **$4.67/month** is the observed compute for weekly image builds and
+the daily canary. At higher workflow volume, that fixed amount is spread across
+more runs.
 
-This README does not convert elapsed CI time directly into developer dollars.
-The
-[SPACE framework](https://www.microsoft.com/en-us/research/publication/the-space-of-developer-productivity-theres-more-to-it-than-you-think/)
-from Microsoft Research and ACM describes developer productivity as
-multidimensional and cautions against representing it with one metric. Teams
-can apply their own observed blocked-time rate, staffing model, and loaded
-cost separately.
+The rates come from
+[GitHub's Actions runner pricing](https://docs.github.com/en/enterprise-cloud@latest/billing/reference/actions-runner-pricing).
+GitHub rounds each job up to a whole billed minute.
 
-Custom-image storage accrues by retained GB-hours. Apply the rate and included
-allowance shown in the
+Your actual bill can be lower when plan allowances cover standard private
+minutes. Custom-image storage is separate and depends on retained image size,
+retention time, and the storage included with your plan. Check the
 [GitHub pricing calculator](https://github.com/pricing/calculator?feature=actions)
-or your billing dashboard. See
-[Custom-image storage billing](https://docs.github.com/en/enterprise-cloud@latest/billing/concepts/product-billing/github-actions#custom-image-storage).
+or billing dashboard for your organization. See
+[custom-image storage billing](https://docs.github.com/en/enterprise-cloud@latest/billing/concepts/product-billing/github-actions#custom-image-storage).
 
 </details>
 
