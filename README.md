@@ -177,46 +177,21 @@ Changing `BENCHMARK_REPOSITORY` requires rebuilding the image.
 
 ## ◇ Economics
 
-<table>
-<tr>
-<td align="center" width="33%">
-<sub>PRIVATE REPOSITORY</sub>
-<h3>−$0.108 / run</h3>
-</td>
-<td align="center" width="33%">
-<sub>SAME 4-CORE RUNNER</sub>
-<h3>−$0.264 / run</h3>
-</td>
-<td align="center" width="33%">
-<sub>THIS PUBLIC DEMO</sub>
-<h3>+$0.022 / run</h3>
-</td>
-</tr>
-</table>
+### Scale across a month · private repository example
 
-### Scale across a month · private repository
-
-| Runs / month | Net runner compute saved* | Setup time removed** |
+| Runs / month | Without custom image | With custom image* |
 |---:|---:|---:|
-| 50 | **$0.73** | **9.7 hours** |
-| 100 | **$6.13** | **19.4 hours** |
-| 1,000 | **$103.33** | **194 hours** |
-| 10,000 | **$1,075.33** | **1,940 hours** |
+| 1,000 | **$130.00** | **$26.67** |
+| 10,000 | **$1,300.00** | **$224.67** |
+| 50,000 | **$6,500.00** | **$1,104.67** |
 
-> At **1,000 runs per month**, the model saves **$103/month in runner
-> compute** and removes **194 hours of aggregate setup time** before storage.
+> At **50,000 runs per month**: **$6,500 without** the custom image versus
+> **$1,104.67 with** it, before storage.
 
 <sub>
-* Compares private standard Windows after included minutes with the 4-core
-custom-image runner, then subtracts $4.67/month for image-build and canary
-compute. Storage is excluded.<br/>
-** Measured elapsed setup time across workflow runs—not developer hours or
-payroll savings.
+* Includes $4.67/month for image-build and canary compute. Assumes private
+standard Windows minutes are billable after plan allowances. Storage excluded.
 </sub>
-
-> [!WARNING]
-> Custom-image storage is billed separately and is not included above.
-> Setup time is intentionally not assigned a dollar value.
 
 <details>
 <summary><strong>Cost assumptions and break-even calculation</strong></summary>
@@ -225,11 +200,11 @@ As of October 10, 2026, a Windows 4-core larger runner costs
 [$0.022/minute](https://docs.github.com/en/enterprise-cloud@latest/billing/reference/actions-runner-pricing),
 and each job rounds up to a whole minute.
 
-| Comparison | Cold | Custom | Difference |
-|---|---:|---:|---:|
-| Same 4-core larger runner | $0.286 | $0.022 | **$0.264 saved** |
-| Private standard Windows after included minutes | $0.130 | $0.022 | **$0.108 saved** |
-| Public repository used by this demo | $0.000 | $0.022 | **$0.022 added** |
+| Scenario | Without custom image | With custom image |
+|---|---:|---:|
+| Private standard Windows after included minutes | **$0.130** | **$0.022** |
+| Same 4-core larger runner | **$0.286** | **$0.022** |
+| Public repository used by this demo | **$0.000** | **$0.022** |
 
 The observed weekly image build costs about **$4.00/month** and the daily
 canary about **$0.67/month**. Before storage, maintenance compute breaks even
@@ -251,6 +226,31 @@ or your billing dashboard. See
 [Custom-image storage billing](https://docs.github.com/en/enterprise-cloud@latest/billing/concepts/product-billing/github-actions#custom-image-storage).
 
 </details>
+
+### Where the pattern can grow
+
+```mermaid
+flowchart LR
+    Image["CUSTOM IMAGE"]
+    Image --> Repos["Large repositories<br/>and dependency caches"]
+    Image --> SDKs["Large SDKs<br/>and compiler workloads"]
+    Image --> Services["Databases<br/>and local services"]
+    Image --> Tests["Browser binaries<br/>and test assets"]
+
+    classDef image fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:3px
+    classDef usecase fill:#f6f8fa,color:#24292f,stroke:#8c959f,stroke-width:2px
+    class Image image
+    class Repos,SDKs,Services,Tests usecase
+```
+
+Good candidates are large, stable, deterministic installations that otherwise
+repeat in every job—for example Android system images, Playwright browsers,
+specialized compiler workloads, database engines, and restored dependency
+caches.
+
+> [!NOTE]
+> These are **future examples**, not extra time added to the 96.2% result.
+> Each use case should be benchmarked independently before claiming savings.
 
 ## ↻ Automatic freshness
 

@@ -544,13 +544,10 @@ jobs:
           $beforeEquivalentCost = $beforeBillableMinutes * $runnerRate
           $beforePrivateCost = $beforeBillableMinutes * $standardWindowsRate
           $afterRunnerCost = $afterBillableMinutes * $runnerRate
-          $computeSavings = $beforeEquivalentCost - $afterRunnerCost
-          $privateSavings = $beforePrivateCost - $afterRunnerCost
-          $setupHoursPerHundred = [math]::Max(0, $saved / 3600 * 100)
-          $computeSavingsText = '$' + $computeSavings.ToString("0.000", $culture)
-          $privateSavingsText = '$' + $privateSavings.ToString("0.000", $culture)
-          $afterRunnerCostText = '+$' + $afterRunnerCost.ToString("0.000", $culture)
-          $setupHoursText = $setupHoursPerHundred.ToString("0.00", $culture) + ' hours'
+          $beforeEquivalentCostText = '$' + $beforeEquivalentCost.ToString("0.000", $culture)
+          $beforePrivateCostText = '$' + $beforePrivateCost.ToString("0.000", $culture)
+          $afterRunnerCostText = '$' + $afterRunnerCost.ToString("0.000", $culture)
+          $publicStandardCostText = '$0.000'
           $runnerRateText = '$' + $runnerRate.ToString("0.000", $culture)
           $standardWindowsRateText = '$' + $standardWindowsRate.ToString("0.000", $culture)
 
@@ -589,8 +586,8 @@ jobs:
           <h2>${speedup}×</h2>
           </td>
           <td align="center">
-          <strong>💵 4-CORE COMPUTE SAVED</strong>
-          <h2>$computeSavingsText</h2>
+          <strong>💵 CUSTOM JOB COMPUTE</strong>
+          <h2>$afterRunnerCostText</h2>
           </td>
           </tr>
           </table>
@@ -617,19 +614,19 @@ jobs:
               class After after
           ``````
 
-          ## 💵 Economics per run
+          ## 💵 Compute cost per run
 
-          | Lens | Value | Meaning |
-          |---|---:|---|
-          | Same Windows 4-core larger runner | **$computeSavingsText saved** | $beforeBillableMinutes billed min → $afterBillableMinutes billed min at $runnerRateText/min |
-          | Private standard Windows | **$privateSavingsText saved** | $beforeBillableMinutes billed min at $standardWindowsRateText/min → custom runner |
-          | This public demo | **$afterRunnerCostText** | Standard runner is free; custom larger runner is billed |
-          | 100 equivalent runs | **$setupHoursText removed** | Aggregate measured setup time; not developer hours or payroll savings |
+          | Scenario | Without custom image | With custom image |
+          |---|---:|---:|
+          | Private standard Windows | **$beforePrivateCostText** | **$afterRunnerCostText** |
+          | Same Windows 4-core larger runner | **$beforeEquivalentCostText** | **$afterRunnerCostText** |
+          | This public demo | **$publicStandardCostText** | **$afterRunnerCostText** |
 
-          > Compute estimate only. Image-build compute and custom-image storage
-          > are excluded. Setup time is intentionally not assigned a dollar
-          > value. ✅ Both jobs verified the same Git commit, file count, and
-          > Git → SQL workload.
+          > $beforeBillableMinutes versus $afterBillableMinutes billed minutes.
+          > Uses $standardWindowsRateText/min for standard Windows and
+          > $runnerRateText/min for Windows 4-core. Image-build compute and
+          > custom-image storage are excluded. ✅ Both jobs verified the same
+          > Git commit, file count, and Git → SQL workload.
 
           <details>
           <summary><strong>Full timing, proof, and methodology</strong></summary>
