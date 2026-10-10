@@ -1,30 +1,54 @@
+# Builds the reusable Windows image consumed by the benchmark and canary.
+#
+# The expensive work happens here once:
+#   1. Clone the benchmark repository with full history.
+#   2. Install SQL Server.
+#   3. Create a credential-free Git mirror and materialized worktree.
+#   4. Validate both assets before GitHub captures the VM.
+#
+# A successful job containing `snapshot` publishes a new image version.
 name: Build Windows monorepo image
 
 on:
+  # Manual runs are useful for the first image and urgent refreshes.
   workflow_dispatch:
+  # A weekly clean rebuild picks up the current GitHub-owned Windows image,
+  # Windows patches, SQL media, and benchmark repository content.
   schedule:
     - cron: "17 3 * * 0"
 
+# The workflow only reads this repository and the benchmark repository.
 permissions:
   contents: read
 
+# Never build two versions of the same image concurrently. Cancelling a build
+# midway could waste a long SQL installation and leave no publishable image.
 concurrency:
   group: windows-monorepo-sqlserver-image
   cancel-in-progress: false
 
 env:
+  # Override this variable at repository or organization scope to benchmark a
+  # representative monorepo. The public LLVM repository keeps the demo usable.
   BENCHMARK_REPOSITORY: ${{ vars.BENCHMARK_REPOSITORY || 'llvm/llvm-project' }}
 
 jobs:
   build-image:
     name: Build image
+    # This must be a GitHub-hosted larger runner configured for image
+    # generation. A standard `windows-latest` runner cannot publish snapshots.
     runs-on: ${{ vars.IMAGE_GENERATION_RUNNER || 'windows-image-generation' }}
     timeout-minutes: 180
+
+    # GitHub captures the runner only after every step below succeeds.
+    # `1.*` automatically creates the next minor version.
     snapshot:
       image-name: windows-monorepo-sqlserver
       version: "1.*"
 
     steps:
+      # Keep the small example repository separate from the large benchmark
+      # checkout so it can be deleted before the image is captured.
       - name: Check out the example tooling
         uses: actions/checkout@v4
         with:
@@ -32,6 +56,8 @@ jobs:
           path: image-source
           persist-credentials: false
 
+      # Full history is intentional: the resulting mirror must accelerate jobs
+      # that use `fetch-depth: 0`, not merely shallow checkouts.
       - name: Check out the benchmark monorepo
         uses: actions/checkout@v4
         with:
@@ -41,11 +67,18 @@ jobs:
           path: benchmark-source
           persist-credentials: false
 
+      # Installation media is downloaded only during image generation. Consumer
+      # jobs merely start and query the already-installed service.
       - name: Install SQL Server Developer
         timeout-minutes: 135
         shell: pwsh
         run: ./image-source/scripts/Install-SqlServer.ps1
 
+      # Seed-GitRepository creates both reusable assets:
+      #   repository.git - credential-free bare object mirror
+      #   worktree       - clean, fully materialized file tree
+      # The bootstrap script is copied beside them so consumer jobs can activate
+      # the cache without depending on a globally installed helper.
       - name: Seed the repository mirror
         shell: pwsh
         env:
@@ -62,10 +95,13 @@ jobs:
             -Destination "$env:CACHE_ROOT\Initialize-WarmCheckout.ps1" `
             -Force
 
+      # Fail before snapshotting if SQL Server cannot start and accept a query.
       - name: Validate SQL Server
         shell: pwsh
         run: ./image-source/scripts/Test-SqlServer.ps1
 
+      # A custom image persists disk state. These checks prevent a corrupt,
+      # dirty, or credential-bearing repository from becoming reusable state.
       - name: Validate the credential-free Git cache
         shell: pwsh
         env:
@@ -87,6 +123,8 @@ jobs:
             }
           }
 
+      # The benchmark cache lives under ProgramData. The original Actions
+      # workspaces are unnecessary and would only make the image larger.
       - name: Remove the temporary checkout
         shell: pwsh
         run: |

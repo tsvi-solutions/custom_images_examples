@@ -1,7 +1,14 @@
+# Daily end-to-end canary for the consumer runner.
+#
+# A successful image-build job is not enough: image provisioning is
+# asynchronous, the consumer may be pinned to an old version, and cached
+# content can age. This workflow validates the experience a real job receives.
 name: Validate custom image freshness
 
 on:
+  # Useful immediately after publishing or rolling back an image.
   workflow_dispatch:
+  # Daily validation catches failures between weekly clean rebuilds.
   schedule:
     - cron: "47 9 * * *"
 
@@ -9,26 +16,33 @@ permissions:
   contents: read
 
 concurrency:
+  # One complete canary is enough; do not cancel an active validation midway.
   group: validate-custom-image
   cancel-in-progress: false
 
 env:
   BENCHMARK_REPOSITORY: ${{ vars.BENCHMARK_REPOSITORY || 'llvm/llvm-project' }}
+  # Override this variable when using a different image-build cadence.
   CUSTOM_IMAGE_MAX_AGE_DAYS: ${{ vars.CUSTOM_IMAGE_MAX_AGE_DAYS || '10' }}
 
 jobs:
   canary:
     name: Cached Git + SQL Server canary
+    # This label must point to the consumer larger runner configured with the
+    # custom image. Selecting `Latest` in organization settings is recommended.
     runs-on: ${{ vars.CUSTOM_IMAGE_RUNNER || 'windows-monorepo-sqlserver-runner' }}
     timeout-minutes: 30
 
     steps:
+      # Download only the small validation scripts into this fresh VM.
       - name: Check out validation tooling
         uses: actions/checkout@v4
         with:
           path: tooling
           persist-credentials: false
 
+      # Marker files are created by image generation. Their presence proves
+      # compatibility; their timestamps provide a deterministic age signal.
       - name: Inspect cached image age
         id: image
         shell: pwsh
@@ -59,6 +73,8 @@ jobs:
           "repository_url=$repositoryUrl" >> $env:GITHUB_OUTPUT
           "cached_commit=$((Get-Content -LiteralPath $cachedCommitPath -Raw).Trim())" >> $env:GITHUB_OUTPUT
 
+      # Image freshness and source freshness are independent. Even an image
+      # built days ago must update to the repository HEAD resolved today.
       - name: Resolve latest benchmark revision
         id: revision
         shell: pwsh
@@ -72,6 +88,7 @@ jobs:
           "sha=$sha" >> $env:GITHUB_OUTPUT
           Write-Host "Latest benchmark revision: $sha"
 
+      # Move the image-baked worktree into the job workspace before checkout.
       - name: Activate prepared worktree
         id: initialize
         shell: pwsh
@@ -83,6 +100,8 @@ jobs:
             -RemoteUrl "https://github.com/$env:BENCHMARK_REPOSITORY"
           "seconds=$seconds" >> $env:GITHUB_OUTPUT
 
+      # Fetch only changes since the cached commit. `clean: false` avoids a
+      # redundant scan because the image build validated this fresh VM's tree.
       - name: Update cached checkout
         id: checkout
         uses: actions/checkout@v4
@@ -95,6 +114,8 @@ jobs:
           persist-credentials: false
           clean: false
 
+      # Prove the image contains a usable SQL service, not merely installer
+      # files or an incomplete installation.
       - name: Validate SQL Server
         id: sql
         shell: pwsh
@@ -106,6 +127,8 @@ jobs:
           $timer.Stop()
           "seconds=$($timer.Elapsed.TotalSeconds.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture))" >> $env:GITHUB_OUTPUT
 
+      # Cross both cached systems: read Git evidence, write it into SQL Server,
+      # query it back, and require the exact SHA resolved above.
       - name: Prove Git and SQL Server work together
         id: proof
         shell: pwsh
@@ -129,6 +152,7 @@ jobs:
           "tracked_files=$($evidence.TrackedFiles)" >> $env:GITHUB_OUTPUT
           "ready_seconds=$($readySeconds.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture))" >> $env:GITHUB_OUTPUT
 
+      # Always publish diagnostics so stale-image failures remain explainable.
       - name: Publish canary summary
         if: always()
         shell: pwsh
@@ -169,6 +193,8 @@ jobs:
           ```
           "@ >> $env:GITHUB_STEP_SUMMARY
 
+      # Reporting and enforcement are separate: the useful summary survives
+      # while this final step makes stale images fail visibly.
       - name: Enforce image freshness
         if: always() && steps.image.outputs.is_stale == 'true'
         shell: pwsh

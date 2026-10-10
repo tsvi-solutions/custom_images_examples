@@ -1,8 +1,15 @@
+# Runs a fair, same-commit comparison between:
+#   - BEFORE: a fresh standard Windows runner that performs all setup.
+#   - AFTER:  a fresh larger runner created from the prepared custom image.
+#
+# One benchmark commit is pinned for both paths. The final job verifies both
+# outcomes match before publishing timing and cost results.
 name: Compare before and after custom image
 
 on:
   workflow_dispatch:
     inputs:
+      # Telemetry is opt-in so monitoring does not distract from the core demo.
       telemetry:
         description: Collect CPU, memory, disk, network, and process telemetry
         type: boolean
@@ -15,6 +22,8 @@ env:
   BENCHMARK_REPOSITORY: ${{ vars.BENCHMARK_REPOSITORY || 'llvm/llvm-project' }}
 
 jobs:
+  # Resolve the moving default branch once. Both Windows jobs consume this SHA,
+  # preventing repository activity during the run from skewing the comparison.
   benchmark:
     name: Pin benchmark revision
     runs-on: ubuntu-latest
@@ -39,6 +48,7 @@ jobs:
           "elapsed_seconds=$($timer.Elapsed.TotalSeconds.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture))" >> $env:GITHUB_OUTPUT
           Write-Host "Pinned $env:BENCHMARK_REPOSITORY at $sha."
 
+  # Baseline: reproduce the setup work a normal hosted Windows job performs.
   before:
     name: Before - windows-latest
     needs: benchmark
@@ -55,6 +65,8 @@ jobs:
       tracked_files: ${{ steps.workload.outputs.tracked_files }}
 
     steps:
+      # Tooling supplies the PowerShell scripts. Its duration is reported
+      # separately and excluded from the headline monorepo + SQL setup metric.
       - name: Start tooling checkout timer
         shell: pwsh
         run: |
@@ -83,6 +95,8 @@ jobs:
         if: ${{ inputs.telemetry }}
         uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # v1
 
+      # The headline timer begins immediately before the work that the custom
+      # image is designed to remove.
       - name: Start total timer
         shell: pwsh
         run: |
@@ -91,6 +105,8 @@ jobs:
           [System.Diagnostics.Stopwatch]::GetTimestamp() |
             Set-Content -LiteralPath "$env:RUNNER_TEMP\checkout-start.txt"
 
+      # This intentionally expensive cold path downloads full Git history and
+      # materializes a completely new worktree.
       - name: Check out the complete benchmark monorepo
         uses: actions/checkout@v4
         with:
@@ -113,6 +129,8 @@ jobs:
           )
           "elapsed_seconds=$seconds" >> $env:GITHUB_OUTPUT
 
+      # Installation and readiness are timed together because both block a real
+      # job from using the database.
       - name: Install and verify SQL Server
         id: sql_timing
         timeout-minutes: 135
@@ -140,6 +158,8 @@ jobs:
           )
           "elapsed_seconds=$seconds" >> $env:GITHUB_OUTPUT
 
+      # Correctness proof: read the Git revision, insert it into SQL Server,
+      # query it back, and expose the evidence to the comparison job.
       - name: Execute Git and SQL dependent workload
         id: workload
         shell: pwsh
@@ -201,9 +221,13 @@ jobs:
         with:
           mode: stop
 
+  # Optimized path: activate the image-baked worktree, fetch only the delta,
+  # and query the preinstalled SQL Server.
   after:
     name: After - custom image
     needs: benchmark
+    # The organization runner configuration must select this custom image and
+    # track `Latest`; workflow YAML cannot override a pinned image version.
     runs-on: ${{ vars.CUSTOM_IMAGE_RUNNER || 'windows-monorepo-sqlserver-runner' }}
     timeout-minutes: 30
     outputs:
@@ -218,6 +242,7 @@ jobs:
       tracked_files: ${{ steps.workload.outputs.tracked_files }}
 
     steps:
+      # Keep the small tooling checkout outside the headline setup metric.
       - name: Start tooling checkout timer
         shell: pwsh
         run: |
@@ -246,6 +271,8 @@ jobs:
         if: ${{ inputs.telemetry }}
         uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # v1
 
+      # Activation is a same-volume move plus metadata-only HEAD detachment. It
+      # avoids copying or rescanning roughly 187,000 files.
       - name: Start timer and activate prepared worktree
         id: initialize
         shell: pwsh
@@ -261,6 +288,9 @@ jobs:
           [System.Diagnostics.Stopwatch]::GetTimestamp() |
             Set-Content -LiteralPath "$env:RUNNER_TEMP\checkout-start.txt"
 
+      # actions/checkout still handles authentication, fetching, and the final
+      # pinned checkout. `clean: false` avoids a redundant full-tree scan; the
+      # image build already proved this fresh VM's prepared tree is clean.
       - name: Check out the benchmark monorepo delta
         uses: actions/checkout@v4
         with:
@@ -272,6 +302,8 @@ jobs:
           persist-credentials: false
           clean: false
 
+      # Combine activation and checkout so this number compares fairly with the
+      # baseline's complete checkout duration.
       - name: Record warm checkout duration
         id: checkout_timing
         shell: pwsh
@@ -288,6 +320,8 @@ jobs:
           "action_seconds=$([math]::Round($checkout, 2))" >> $env:GITHUB_OUTPUT
           "elapsed_seconds=$seconds" >> $env:GITHUB_OUTPUT
 
+      # No installer runs here. This measures service readiness and the same
+      # database creation/query validation used by the baseline.
       - name: Verify preinstalled SQL Server
         id: sql_timing
         shell: pwsh
@@ -313,6 +347,7 @@ jobs:
           )
           "elapsed_seconds=$seconds" >> $env:GITHUB_OUTPUT
 
+      # Run the identical proof used by the baseline.
       - name: Execute Git and SQL dependent workload
         id: workload
         shell: pwsh
@@ -374,6 +409,8 @@ jobs:
         with:
           mode: stop
 
+  # Presentation and integrity gate. It runs only after both Windows paths and
+  # refuses to publish a success-shaped comparison for different outputs.
   comparison:
     name: Before versus after
     needs:
@@ -403,11 +440,15 @@ jobs:
       AFTER_FILES: ${{ needs.after.outputs.tracked_files }}
 
     steps:
+      # Formatting lives here so measured jobs remain focused. Before rendering
+      # the summary, the script checks commit SHA and tracked-file equality.
       - name: Publish comparison
         shell: pwsh
         run: |
           $culture = [Globalization.CultureInfo]::InvariantCulture
 
+          # Job outputs cross the YAML boundary as strings. Parse them with an
+          # invariant culture so decimal points behave identically everywhere.
           function Convert-ToSeconds {
             param([string]$Value)
             return [double]::Parse($Value, $culture)
@@ -449,6 +490,8 @@ jobs:
             return [math]::Round((1 - ($After / $Before)) * 100, 1)
           }
 
+          # Convert every measured output once, then calculate presentation
+          # values from strongly typed numbers.
           $resolveSeconds = Convert-ToSeconds $env:RESOLVE_SECONDS
           $beforeTooling = Convert-ToSeconds $env:BEFORE_TOOLING
           $afterTooling = Convert-ToSeconds $env:AFTER_TOOLING
@@ -488,6 +531,10 @@ jobs:
           $headlineLabel = if ($saved -ge 0) { "TIME SAVED" } else { "TIME ADDED" }
           $headlineDuration = Format-Duration ([math]::Abs($saved))
           $runUrl = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+
+          # GitHub bills Windows 4-core larger runners per started minute. This
+          # comparison intentionally keeps public-demo cost separate from the
+          # hypothetical same-runner compute saving.
           $runnerRate = 0.022
           $beforeBillableMinutes = [math]::Ceiling($beforeObserved / 60)
           $afterBillableMinutes = [math]::Ceiling($afterObserved / 60)
@@ -501,6 +548,8 @@ jobs:
           $runnerRateText = '$' + $runnerRate.ToString("0.000", $culture)
           $engineeringRateText = '$100/hour'
 
+          # Timing is meaningful only if both jobs produced the same checkout.
+          # Fail instead of publishing attractive but invalid numbers.
           if ($env:BEFORE_COMMIT -ne $env:AFTER_COMMIT) {
             throw "Before and after used different benchmark commits."
           }
