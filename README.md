@@ -1,92 +1,78 @@
 <div align="center">
 
-# 🚀 GitHub Actions Custom Images
+# GitHub Actions · Custom Images
 
-### Build the slow parts once. Start every job ready.
+### A Windows runner, already prepared.
 
 [![Windows](https://img.shields.io/badge/Windows-x64-0078D4?style=for-the-badge&logo=windows11&logoColor=white)](https://github.com/actions/runner-images)
 [![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Custom_Images-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
 [![SQL Server](https://img.shields.io/badge/SQL_Server-2022_Developer-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)](https://learn.microsoft.com/sql/database-engine/install-windows/install-sql-server)
 
-**Example 01 · Large monorepo checkout + SQL Server**
-
-[See the result](#-verified-result) ·
-[How it works](#-how-it-works) ·
-[Run it](#-run-it)
+**01 / Large monorepo checkout + SQL Server**
 
 </div>
 
 ---
 
-## 🏆 Verified result
+## ◈ Proven outcome
 
 <table>
 <tr>
 <td align="center" width="33%">
-<strong>⏱️ READY FOR WORK</strong><br/><br/>
-<strong>12 min 06 sec → 28 sec</strong>
+<sub>TIME TO READY</sub>
+<h2>12:06 → 0:28</h2>
 </td>
 <td align="center" width="33%">
-<strong>📉 LESS SETUP</strong><br/><br/>
-<strong>96.2%</strong>
+<sub>SETUP REMOVED</sub>
+<h2>96.2%</h2>
 </td>
 <td align="center" width="33%">
-<strong>⚡ FASTER</strong><br/><br/>
-<strong>26.1×</strong>
+<sub>FASTER FEEDBACK</sub>
+<h2>26.1×</h2>
 </td>
 </tr>
 </table>
 
-| | 🔴 Standard `windows-latest` | 🟢 Custom image |
+| | Standard runner | Custom image |
 |---|---:|---:|
 | Git checkout | 8 min 42 sec | **27 sec** |
 | SQL Server ready | 3 min 24 sec | **0.27 sec** |
-| **Total setup** | **12 min 06 sec** | **28 sec** |
+| **Ready for work** | **12 min 06 sec** | **28 sec** |
 
-> **11 min 39 sec returned to the feedback loop on every run.**
+<div align="center">
 
-[View canonical benchmark run 38083459558 →](https://github.com/tsvi-solutions/custom_images_examples/actions/runs/38083459558)
+[![Verified benchmark](https://img.shields.io/badge/VERIFIED-RUN_38083459558-1F883D?style=for-the-badge&logo=github&logoColor=white)](https://github.com/tsvi-solutions/custom_images_examples/actions/runs/38083459558)
 
-<sub>
-LLVM at commit <code>b1dd93c6af666442840896e0f30c1506e587b6db</code> ·
-186,978 tracked files · custom image <code>1.1.0</code>
-</sub>
+</div>
 
-## 🎯 What changed?
+<p align="center">
+<sub>LLVM · 186,978 files · full history · image 1.1.0</sub>
+</p>
 
-| 🔴 Every standard job | 🟣 Build once into the image | 🟢 Every custom-image job |
-|---|---|---|
-| Download full Git history | Credential-free Git mirror | Activate prepared worktree |
-| Materialize ~187K files | Clean materialized worktree | Fetch only the latest delta |
-| Download SQL media | SQL Server 2022 Developer | Query SQL Server immediately |
-| Install and configure SQL | Weekly GitHub snapshot | Start useful work |
-
-## 🧠 How it works
+## ↯ Build once. Reuse everywhere.
 
 ```mermaid
 flowchart LR
-    Git["🪞 Git mirror"]
-    Tree["📂 Ready worktree"]
-    SQL["🗄️ SQL Server"]
-    Image["📸 Custom image"]
-    Job["⚡ New runner<br/>Fetch delta + work"]
+    Prepare["PREPARE ONCE<br/>Git · Files · SQL Server"]
+    Image["CUSTOM IMAGE"]
+    Update["EACH JOB<br/>Fetch latest delta"]
+    Ready["READY<br/>28 seconds"]
 
-    Git --> Image
-    Tree --> Image
-    SQL --> Image
-    Image --> Job
+    Prepare --> Image --> Update --> Ready
 
-    classDef asset fill:#fbefff,color:#5a1e75,stroke:#8250df,stroke-width:2px
+    classDef source fill:#f6f8fa,color:#24292f,stroke:#8c959f,stroke-width:2px
     classDef image fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:3px
+    classDef action fill:#fff8c5,color:#633c01,stroke:#bf8700,stroke-width:2px
     classDef ready fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:3px
-    class Git,Tree,SQL asset
+    class Prepare source
     class Image image
-    class Job ready
+    class Update action
+    class Ready ready
 ```
 
-The image stores the expensive, stable setup. Each job still uses
-`actions/checkout`, authenticates normally, resolves the latest source
-revision, and downloads changes made since the image was built.
+The image carries the stable setup. The job still authenticates normally and
+uses `actions/checkout`; it simply downloads the changes made since the image
+was built.
 
 <details>
 <summary><strong>Why the warm checkout is safe and fast</strong></summary>
@@ -114,27 +100,11 @@ repositories for authentication headers or token markers before snapshotting.
 
 </details>
 
-## 🏃 Run it
+## ▶ Run the demo
 
-```mermaid
-flowchart LR
-    A["1️⃣ Create image<br/>generation runner"]
-    B["2️⃣ Build image"]
-    C["3️⃣ Create consumer<br/>using Latest"]
-    D["4️⃣ Run comparison"]
-    A --> B --> C --> D
-
-    classDef step fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:2px
-    class A,B,C,D step
-```
-
-1. Create a Windows x64 **image-generation larger runner** named
-   `windows-image-generation`.
-2. Run **Build Windows monorepo image**.
-3. Create a 4-core Windows larger runner named
-   `windows-monorepo-sqlserver-runner`; select the new custom image and
-   version **Latest**.
-4. Run **Compare before and after custom image**.
+| `01` GENERATE | `02` BUILD | `03` ATTACH | `04` COMPARE |
+|---|---|---|---|
+| Create `windows-image-generation` | Run **Build Windows monorepo image** | Create consumer runner using **Latest** | Run **Compare before and after** |
 
 > [!IMPORTANT]
 > Create both runners from **organization settings**. Custom images require
@@ -205,13 +175,24 @@ Changing `BENCHMARK_REPOSITORY` requires rebuilding the image.
 
 </details>
 
-## 💵 Time and money
+## ◇ Economics
 
-| Scenario | Result per run |
-|---|---:|
-| Same Windows 4-core runner before vs. after | **$0.264 compute saved** |
-| This public demo: free standard runner vs. paid larger runner | **$0.022 added cost** |
-| Engineering capacity at $100/hour and 25% blocked time | **$4.85 recovered** |
+<table>
+<tr>
+<td align="center" width="33%">
+<sub>SAME 4-CORE RUNNER</sub>
+<h3>−$0.264 / run</h3>
+</td>
+<td align="center" width="33%">
+<sub>THIS PUBLIC DEMO</sub>
+<h3>+$0.022 / run</h3>
+</td>
+<td align="center" width="33%">
+<sub>25% BLOCKED @ $100/HOUR</sub>
+<h3>+$4.85 capacity</h3>
+</td>
+</tr>
+</table>
 
 > [!WARNING]
 > Custom-image storage is billed separately and is not included above.
@@ -257,20 +238,20 @@ or your billing dashboard. See
 
 </details>
 
-## 🔄 Stays fresh automatically
+## ↻ Automatic freshness
 
 ```mermaid
 flowchart LR
-    Weekly["🕒 Weekly"] --> Build["🔨 Clean rebuild"]
-    Build --> Latest["📸 New version"]
-    Latest --> Runner["🏃 Latest"]
-    Runner --> Canary["🩺 Daily canary"]
+    Base["windows-latest"] --> Build["WEEKLY REBUILD"]
+    Build --> Version["NEW VERSION"]
+    Version --> Runner["CONSUMER · LATEST"]
+    Runner -. daily .-> Canary["CANARY"]
 
-    classDef scheduled fill:#fbefff,color:#5a1e75,stroke:#8250df,stroke-width:2px
+    classDef base fill:#f6f8fa,color:#24292f,stroke:#8c959f
     classDef image fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:2px
     classDef healthy fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:2px
-    class Weekly scheduled
-    class Build,Latest image
+    class Base base
+    class Build,Version image
     class Runner,Canary healthy
 ```
 
@@ -305,7 +286,7 @@ for weekly builds. Configure a
 
 </details>
 
-## 📁 Explore
+## ⌘ Explore the implementation
 
 | Start here | Purpose |
 |---|---|
@@ -373,6 +354,6 @@ and
 
 <div align="center">
 
-### Build once · Validate once · Start ready
+### ◈ Build once · Validate once · Start ready
 
 </div>
