@@ -475,7 +475,6 @@ jobs:
           $sqlSaved = [math]::Round($beforeSql - $afterSql, 2)
           $checkoutReduction = Get-Reduction $beforeCheckout $afterCheckout
           $sqlReduction = Get-Reduction $beforeSql $afterSql
-          $chartMax = [math]::Ceiling($beforeTotal / 100) * 100
           $beforeOverhead = [math]::Max(
             0,
             $beforeTotal - $beforeCheckout - $beforeSql
@@ -486,15 +485,21 @@ jobs:
           )
           $beforeObserved = $beforeTooling + $beforeTotal + $beforeWorkload
           $afterObserved = $afterTooling + $afterTotal + $afterWorkload
-          $overheadSaved = [math]::Max(
-            0,
-            [math]::Round($beforeOverhead - $afterOverhead, 2)
-          )
-          $checkoutSavedForChart = [math]::Max(0, $checkoutSaved)
-          $sqlSavedForChart = [math]::Max(0, $sqlSaved)
           $headlineLabel = if ($saved -ge 0) { "TIME SAVED" } else { "TIME ADDED" }
           $headlineDuration = Format-Duration ([math]::Abs($saved))
           $runUrl = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+          $runnerRate = 0.022
+          $beforeBillableMinutes = [math]::Ceiling($beforeObserved / 60)
+          $afterBillableMinutes = [math]::Ceiling($afterObserved / 60)
+          $beforeEquivalentCost = $beforeBillableMinutes * $runnerRate
+          $afterRunnerCost = $afterBillableMinutes * $runnerRate
+          $computeSavings = $beforeEquivalentCost - $afterRunnerCost
+          $capacityValue = [math]::Max(0, $saved / 3600 * 100)
+          $computeSavingsText = '$' + $computeSavings.ToString("0.000", $culture)
+          $afterRunnerCostText = '+$' + $afterRunnerCost.ToString("0.000", $culture)
+          $capacityValueText = '$' + $capacityValue.ToString("0.00", $culture)
+          $runnerRateText = '$' + $runnerRate.ToString("0.000", $culture)
+          $engineeringRateText = '$100/hour'
 
           if ($env:BEFORE_COMMIT -ne $env:AFTER_COMMIT) {
             throw "Before and after used different benchmark commits."
@@ -506,137 +511,92 @@ jobs:
           @"
           <div align="center">
 
-          # 🚀 Custom Image Benchmark
+          # ⚡ Custom Image: Before vs. After
 
-          ### From cold setup to a ready-to-work Windows runner
-
-          **$env:BENCHMARK_REPOSITORY** ·
-          ``$($env:BEFORE_COMMIT.Substring(0, 12))`` ·
-          $(([int]$env:BEFORE_FILES).ToString("N0")) tracked files ·
+          **$env:BENCHMARK_REPOSITORY** · ``$($env:BEFORE_COMMIT.Substring(0, 12))`` ·
+          $(([int]$env:BEFORE_FILES).ToString("N0")) files ·
           [Run #$env:GITHUB_RUN_NUMBER]($runUrl)
 
           </div>
 
-          ---
-
-          ## 🏆 Executive result
-
           <table>
           <tr>
           <td align="center">
-          <strong>⏱️ $headlineLabel</strong><br>
+          <strong>⏱️ $headlineLabel</strong>
           <h2>$headlineDuration</h2>
           </td>
           <td align="center">
-          <strong>📉 SETUP REDUCTION</strong><br>
+          <strong>📉 LESS SETUP</strong>
           <h2>$percent%</h2>
           </td>
           <td align="center">
-          <strong>⚡ SPEEDUP</strong><br>
+          <strong>⚡ FASTER</strong>
           <h2>${speedup}×</h2>
           </td>
           <td align="center">
-          <strong>✅ DEPENDENT WORKLOAD</strong><br>
-          <h2>Passed</h2>
+          <strong>💵 4-CORE COMPUTE SAVED</strong>
+          <h2>$computeSavingsText</h2>
           </td>
           </tr>
           </table>
 
-          > **The custom image reached a usable Git + SQL environment in
-          > $(Format-Duration $afterTotal), compared with
-          > $(Format-Duration $beforeTotal) on standard **windows-latest**.**
+          ## 🏁 Result
 
-          ## 📊 Visual overview
-
-          ``````mermaid
-          xychart-beta
-              title "Seconds until ready"
-              x-axis ["Before", "Custom image"]
-              y-axis "Seconds" 0 --> $chartMax
-              bar [$beforeTotal, $afterTotal]
-          ``````
-
-          ### Where the saved time came from
-
-          ``````mermaid
-          pie showData title Time saved by phase
-              "Git checkout" : $checkoutSavedForChart
-              "SQL Server" : $sqlSavedForChart
-              "Bookkeeping" : $overheadSaved
-          ``````
-
-          ### At a glance
-
-          | | 🔴 Before | 🟢 After |
-          |---|---:|---:|
-          | Ready | **$(Format-Duration $beforeTotal)** | **$(Format-Duration $afterTotal)** |
-          | Checkout | $(Format-Duration $beforeCheckout) | $(Format-Duration $afterCheckout) |
-          | SQL | $(Format-Duration $beforeSql) | $(Format-Duration $afterSql) |
-          | Proof | ✅ | ✅ |
-
-          ## ⏱️ Before vs. after
-
-          | Phase | 🔴 Before | 🟢 Custom image | Time saved | Reduction |
-          |---|---:|---:|---:|---:|
-          | Git checkout | $(Format-Duration $beforeCheckout) | $(Format-Duration $afterCheckout) | $(Format-Delta $checkoutSaved) | $checkoutReduction% |
-          | SQL Server readiness | $(Format-Duration $beforeSql) | $(Format-Duration $afterSql) | $(Format-Delta $sqlSaved) | $sqlReduction% |
-          | **Ready for dependent commands** | **$(Format-Duration $beforeTotal)** | **$(Format-Duration $afterTotal)** | **$(Format-Delta $saved)** | **$percent%** |
-          | Proof workload | $(Format-Duration $beforeWorkload) | $(Format-Duration $afterWorkload) | — | ✅ Both passed |
-
-          ## 🔎 Full step breakdown
-
-          Benchmark revision resolution was shared by both paths and took
-          **$(Format-Duration $resolveSeconds)**.
-
-          | # | Workflow phase | 🔴 Before | 🟢 Custom image | In time-to-ready? |
-          |---:|---|---:|---:|:---:|
-          | 1 | Example tooling checkout | $(Format-Duration $beforeTooling) | $(Format-Duration $afterTooling) | No |
-          | 2 | Activate prepared worktree | — | $(Format-Duration $afterCacheInit) | Yes |
-          | 3 | Repository checkout action | $(Format-Duration $beforeCheckoutAction) | $(Format-Duration $afterCheckoutAction) | Yes |
-          | 4 | SQL Server install/readiness | $(Format-Duration $beforeSql) | $(Format-Duration $afterSql) | Yes |
-          | 5 | Timing and readiness bookkeeping | $(Format-Duration $beforeOverhead) | $(Format-Duration $afterOverhead) | Yes |
-          | 6 | Git → SQL proof workload | $(Format-Duration $beforeWorkload) | $(Format-Duration $afterWorkload) | No |
-          | | **Observed workflow path** | **$(Format-Duration $beforeObserved)** | **$(Format-Duration $afterObserved)** | |
+          | | 🔴 Standard `windows-latest` | 🟢 Custom image | Improvement |
+          |---|---:|---:|---:|
+          | Git checkout | $(Format-Duration $beforeCheckout) | **$(Format-Duration $afterCheckout)** | $checkoutReduction% |
+          | SQL Server ready | $(Format-Duration $beforeSql) | **$(Format-Duration $afterSql)** | $sqlReduction% |
+          | **Ready for work** | **$(Format-Duration $beforeTotal)** | **$(Format-Duration $afterTotal)** | **$(Format-Delta $saved)** |
 
           ``````mermaid
           flowchart LR
-              subgraph Before["🔴 BEFORE · windows-latest"]
-                  direction LR
-                  B1["Tooling<br/>$(Format-Duration $beforeTooling)"] -->
-                  B2["Full checkout<br/>$(Format-Duration $beforeCheckoutAction)"] -->
-                  B3["Install SQL<br/>$(Format-Duration $beforeSql)"] -->
-                  B4["Bookkeeping<br/>$(Format-Duration $beforeOverhead)"] -->
-                  B5["Proof workload<br/>$(Format-Duration $beforeWorkload)"]
-              end
-
-              subgraph After["🟢 AFTER · custom image"]
-                  direction LR
-                  A1["Tooling<br/>$(Format-Duration $afterTooling)"] -->
-                  A2["Activate worktree<br/>$(Format-Duration $afterCacheInit)"] -->
-                  A3["Delta checkout<br/>$(Format-Duration $afterCheckoutAction)"] -->
-                  A4["SQL ready<br/>$(Format-Duration $afterSql)"] -->
-                  A5["Bookkeeping<br/>$(Format-Duration $afterOverhead)"] -->
-                  A6["Proof workload<br/>$(Format-Duration $afterWorkload)"]
-              end
-
-              classDef before fill:#ffebe9,color:#82071e,stroke:#cf222e,stroke-width:2px;
-              classDef after fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:2px;
-              class B1,B2,B3,B4,B5 before;
-              class A1,A2,A3,A4,A5,A6 after;
+              Before["🔴 Cold setup<br/>$(Format-Duration $beforeTotal)"]
+              Saved["⚡ Save $headlineDuration"]
+              After["🟢 Ready<br/>$(Format-Duration $afterTotal)"]
+              Before --> Saved --> After
+              classDef before fill:#ffebe9,color:#82071e,stroke:#cf222e,stroke-width:2px
+              classDef saved fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:3px
+              classDef after fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:2px
+              class Before before
+              class Saved saved
+              class After after
           ``````
 
-          ## ✅ Equivalent workload verified
+          ## 💵 Economics per run
 
-          | Check | Evidence |
-          |---|---|
-          | Repository revision | ``$env:BEFORE_COMMIT`` |
-          | Tracked files | $(([int]$env:BEFORE_FILES).ToString("N0")) on both runners |
-          | Git dependency | Commit and file list read successfully |
-          | SQL dependency | Evidence inserted and queried back successfully |
-          | Cache preservation | Prepared worktree and object store accepted by **actions/checkout** |
+          | Lens | Value | Meaning |
+          |---|---:|---|
+          | Same Windows 4-core larger runner | **$computeSavingsText saved** | $beforeBillableMinutes billed min → $afterBillableMinutes billed min at $runnerRateText/min |
+          | This public demo | **$afterRunnerCostText** | Standard runner is free; custom larger runner is billed |
+          | Engineering capacity at $engineeringRateText | **$capacityValueText recovered** | Assumes the entire saved wait blocked one developer |
+
+          > Compute estimate only. Image-build compute and custom-image storage
+          > are excluded. ✅ Both jobs verified the same Git commit, file count,
+          > and Git → SQL workload.
 
           <details>
-          <summary><strong>Methodology and exclusions</strong></summary>
+          <summary><strong>Full timing, proof, and methodology</strong></summary>
+
+          Benchmark revision resolution: **$(Format-Duration $resolveSeconds)**
+
+          | Workflow phase | 🔴 Before | 🟢 Custom image |
+          |---|---:|---:|
+          | Tooling checkout | $(Format-Duration $beforeTooling) | $(Format-Duration $afterTooling) |
+          | Prepared worktree activation | — | $(Format-Duration $afterCacheInit) |
+          | Repository checkout action | $(Format-Duration $beforeCheckoutAction) | $(Format-Duration $afterCheckoutAction) |
+          | SQL Server readiness | $(Format-Duration $beforeSql) | $(Format-Duration $afterSql) |
+          | Timing bookkeeping | $(Format-Duration $beforeOverhead) | $(Format-Duration $afterOverhead) |
+          | Git → SQL proof | $(Format-Duration $beforeWorkload) | $(Format-Duration $afterWorkload) |
+          | **Observed workflow path** | **$(Format-Duration $beforeObserved)** | **$(Format-Duration $afterObserved)** |
+
+          **Correctness evidence**
+
+          - Commit: ``$env:BEFORE_COMMIT``
+          - Tracked files: $(([int]$env:BEFORE_FILES).ToString("N0")) on both runners
+          - Prepared worktree and object store accepted by `actions/checkout`
+          - Git metadata inserted into and queried back from SQL Server
+
+          **Methodology**
 
           - Both jobs check out the same pinned commit with full history.
           - The timer starts immediately before repository setup.
