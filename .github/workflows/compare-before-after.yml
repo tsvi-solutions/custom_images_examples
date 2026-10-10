@@ -15,14 +15,36 @@ env:
   BENCHMARK_REPOSITORY: ${{ vars.BENCHMARK_REPOSITORY || 'llvm/llvm-project' }}
 
 jobs:
+  benchmark:
+    name: Pin benchmark revision
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.revision.outputs.sha }}
+
+    steps:
+      - name: Resolve benchmark HEAD
+        id: revision
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BENCHMARK_TOKEN || github.token }}
+        run: |
+          sha="$(gh api "repos/${BENCHMARK_REPOSITORY}/commits/HEAD" --jq .sha)"
+          test -n "$sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Pinned ${BENCHMARK_REPOSITORY} at ${sha}"
+
   before:
     name: Before - windows-latest
+    needs: benchmark
     runs-on: windows-latest
     timeout-minutes: 120
     outputs:
       checkout_seconds: ${{ steps.checkout_timing.outputs.elapsed_seconds }}
       sql_seconds: ${{ steps.sql_timing.outputs.elapsed_seconds }}
       total_seconds: ${{ steps.total_timing.outputs.elapsed_seconds }}
+      workload_seconds: ${{ steps.workload.outputs.elapsed_seconds }}
+      commit_sha: ${{ steps.workload.outputs.commit_sha }}
+      tracked_files: ${{ steps.workload.outputs.tracked_files }}
 
     steps:
       - name: Check out the example tooling
@@ -48,6 +70,7 @@ jobs:
         with:
           repository: ${{ env.BENCHMARK_REPOSITORY }}
           token: ${{ secrets.BENCHMARK_TOKEN || github.token }}
+          ref: ${{ needs.benchmark.outputs.sha }}
           fetch-depth: 0
           path: benchmark-source
           persist-credentials: false
@@ -91,6 +114,38 @@ jobs:
           )
           "elapsed_seconds=$seconds" >> $env:GITHUB_OUTPUT
 
+      - name: Execute Git and SQL dependent workload
+        id: workload
+        shell: pwsh
+        env:
+          READY_SECONDS: ${{ steps.total_timing.outputs.elapsed_seconds }}
+        run: |
+          $timer = [System.Diagnostics.Stopwatch]::StartNew()
+          $result = ./example-source/scripts/Invoke-ExampleWorkload.ps1 `
+            -RepositoryPath "$env:GITHUB_WORKSPACE\benchmark-source" `
+            -Scenario Before `
+            -ReadySeconds ([double]$env:READY_SECONDS)
+          $timer.Stop()
+
+          "elapsed_seconds=$($timer.Elapsed.TotalSeconds.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture))" >> $env:GITHUB_OUTPUT
+          "commit_sha=$($result.CommitSha)" >> $env:GITHUB_OUTPUT
+          "tracked_files=$($result.TrackedFiles)" >> $env:GITHUB_OUTPUT
+          $result | Format-List
+
+          @"
+          ## Before: runner ready after $env:READY_SECONDS seconds
+
+          ``````powershell
+          git -C benchmark-source rev-parse HEAD
+          git -C benchmark-source ls-files
+          ./scripts/Invoke-ExampleWorkload.ps1
+          ``````
+
+          Git commit ``$($result.CommitSha)`` with **$($result.TrackedFiles)**
+          tracked files was inserted into SQL Server and queried back in
+          **$($timer.Elapsed.TotalSeconds.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture)) seconds**.
+          "@ >> $env:GITHUB_STEP_SUMMARY
+
       - name: Publish optional runner telemetry
         if: ${{ always() && inputs.telemetry }}
         uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # v1
@@ -99,12 +154,16 @@ jobs:
 
   after:
     name: After - custom image
+    needs: benchmark
     runs-on: ${{ vars.CUSTOM_IMAGE_RUNNER || 'windows-monorepo-sqlserver-runner' }}
     timeout-minutes: 30
     outputs:
       checkout_seconds: ${{ steps.checkout_timing.outputs.elapsed_seconds }}
       sql_seconds: ${{ steps.sql_timing.outputs.elapsed_seconds }}
       total_seconds: ${{ steps.total_timing.outputs.elapsed_seconds }}
+      workload_seconds: ${{ steps.workload.outputs.elapsed_seconds }}
+      commit_sha: ${{ steps.workload.outputs.commit_sha }}
+      tracked_files: ${{ steps.workload.outputs.tracked_files }}
 
     steps:
       - name: Check out the example tooling
@@ -121,11 +180,11 @@ jobs:
         id: initialize
         shell: pwsh
         env:
-          REMOTE_URL: ${{ github.server_url }}/${{ env.BENCHMARK_REPOSITORY }}.git
+          REMOTE_URL: ${{ github.server_url }}/${{ env.BENCHMARK_REPOSITORY }}
         run: |
           [System.Diagnostics.Stopwatch]::GetTimestamp() |
             Set-Content -LiteralPath "$env:RUNNER_TEMP\total-start.txt"
-          $elapsed = & C:\ProgramData\GitHubCustomImage\Initialize-WarmCheckout.ps1 `
+          $elapsed = & ./example-source/scripts/Initialize-WarmCheckout.ps1 `
             -WorkspacePath "$env:GITHUB_WORKSPACE\benchmark-source" `
             -RemoteUrl $env:REMOTE_URL
           "elapsed_seconds=$elapsed" >> $env:GITHUB_OUTPUT
@@ -137,6 +196,7 @@ jobs:
         with:
           repository: ${{ env.BENCHMARK_REPOSITORY }}
           token: ${{ secrets.BENCHMARK_TOKEN || github.token }}
+          ref: ${{ needs.benchmark.outputs.sha }}
           fetch-depth: 0
           path: benchmark-source
           persist-credentials: false
@@ -181,6 +241,38 @@ jobs:
           )
           "elapsed_seconds=$seconds" >> $env:GITHUB_OUTPUT
 
+      - name: Execute Git and SQL dependent workload
+        id: workload
+        shell: pwsh
+        env:
+          READY_SECONDS: ${{ steps.total_timing.outputs.elapsed_seconds }}
+        run: |
+          $timer = [System.Diagnostics.Stopwatch]::StartNew()
+          $result = ./example-source/scripts/Invoke-ExampleWorkload.ps1 `
+            -RepositoryPath "$env:GITHUB_WORKSPACE\benchmark-source" `
+            -Scenario After `
+            -ReadySeconds ([double]$env:READY_SECONDS)
+          $timer.Stop()
+
+          "elapsed_seconds=$($timer.Elapsed.TotalSeconds.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture))" >> $env:GITHUB_OUTPUT
+          "commit_sha=$($result.CommitSha)" >> $env:GITHUB_OUTPUT
+          "tracked_files=$($result.TrackedFiles)" >> $env:GITHUB_OUTPUT
+          $result | Format-List
+
+          @"
+          ## After: runner ready after $env:READY_SECONDS seconds
+
+          ``````powershell
+          git -C benchmark-source rev-parse HEAD
+          git -C benchmark-source ls-files
+          ./scripts/Invoke-ExampleWorkload.ps1
+          ``````
+
+          Git commit ``$($result.CommitSha)`` with **$($result.TrackedFiles)**
+          tracked files was inserted into SQL Server and queried back in
+          **$($timer.Elapsed.TotalSeconds.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture)) seconds**.
+          "@ >> $env:GITHUB_STEP_SUMMARY
+
       - name: Publish optional runner telemetry
         if: ${{ always() && inputs.telemetry }}
         uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # v1
@@ -201,6 +293,12 @@ jobs:
       AFTER_SQL: ${{ needs.after.outputs.sql_seconds }}
       BEFORE_TOTAL: ${{ needs.before.outputs.total_seconds }}
       AFTER_TOTAL: ${{ needs.after.outputs.total_seconds }}
+      BEFORE_WORKLOAD: ${{ needs.before.outputs.workload_seconds }}
+      AFTER_WORKLOAD: ${{ needs.after.outputs.workload_seconds }}
+      BEFORE_COMMIT: ${{ needs.before.outputs.commit_sha }}
+      AFTER_COMMIT: ${{ needs.after.outputs.commit_sha }}
+      BEFORE_FILES: ${{ needs.before.outputs.tracked_files }}
+      AFTER_FILES: ${{ needs.after.outputs.tracked_files }}
 
     steps:
       - name: Publish comparison
@@ -225,6 +323,12 @@ jobs:
           } else {
             0
           }
+          if ($env:BEFORE_COMMIT -ne $env:AFTER_COMMIT) {
+            throw "Before and after used different benchmark commits."
+          }
+          if ($env:BEFORE_FILES -ne $env:AFTER_FILES) {
+            throw "Before and after produced different tracked-file counts."
+          }
 
           @"
           # Custom image: before and after
@@ -235,10 +339,15 @@ jobs:
           |---|---:|---:|
           | Full-history checkout | $env:BEFORE_CHECKOUT s | $env:AFTER_CHECKOUT s |
           | SQL Server install/readiness | $env:BEFORE_SQL s | $env:AFTER_SQL s |
-          | **Total measured setup** | **$env:BEFORE_TOTAL s** | **$env:AFTER_TOTAL s** |
+          | **Ready to execute dependent commands** | **$env:BEFORE_TOTAL s** | **$env:AFTER_TOTAL s** |
+          | Git + SQL proof workload | $env:BEFORE_WORKLOAD s | $env:AFTER_WORKLOAD s |
 
           **Result:** the custom image saved **$saved seconds** (**$percent%**) and
           completed the measured setup **${speedup}x faster**.
+
+          Both runners then read commit `$env:BEFORE_COMMIT` with
+          **$env:BEFORE_FILES tracked files**, inserted that evidence into SQL
+          Server, and queried it back successfully.
 
           Runner queue and provisioning time are intentionally excluded because
           the timer starts in the first step of each job.

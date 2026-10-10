@@ -50,7 +50,7 @@ jobs:
         shell: pwsh
         env:
           CACHE_ROOT: C:\ProgramData\GitHubCustomImage
-          REMOTE_URL: ${{ github.server_url }}/${{ env.BENCHMARK_REPOSITORY }}.git
+          REMOTE_URL: ${{ github.server_url }}/${{ env.BENCHMARK_REPOSITORY }}
         run: |
           ./image-source/scripts/Seed-GitRepository.ps1 `
             -SourcePath "$env:GITHUB_WORKSPACE\benchmark-source" `

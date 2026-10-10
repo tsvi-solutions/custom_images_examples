@@ -131,6 +131,9 @@ C:\ProgramData\GitHubCustomImage\repository.git
 The consumer job creates a no-checkout clone backed by that local object store.
 It then hands control to `actions/checkout`, which authenticates normally and
 fetches the exact branch, tag, or pull-request SHA requested by the event.
+The bootstrap script normalizes the origin URL to the exact format expected by
+`actions/checkout`, preventing its repository-safety check from discarding the
+pre-seeded clone.
 
 ```mermaid
 sequenceDiagram
@@ -254,11 +257,19 @@ the image build scans the Git configuration before creating the snapshot.
 
 ### 2 · Create the custom-image runner
 
+> [!IMPORTANT]
+> Publishing a custom image does **not** create a runner that uses it. Create a
+> second GitHub-hosted larger runner and select the new custom image. The
+> image-generation runner cannot pick up consumer jobs because it has a
+> different label and still uses the GitHub-owned base image.
+
 1. Create another GitHub-hosted larger runner.
 2. Choose **Windows x64**.
-3. On the **Custom** image tab, select `windows-monorepo-sqlserver`.
-4. Use the same runner group as the image-generation runner.
-5. Name it `windows-monorepo-sqlserver-runner`, or set
+3. On the **Custom** image tab, select `windows-monorepo-sqlserver` version
+   `1.0.0` (or the latest ready version).
+4. Choose **4 cores, 16 GB RAM, 150 GB SSD** and maximum concurrency **1**.
+5. Use the same runner group as the image-generation runner.
+6. Name it `windows-monorepo-sqlserver-runner`, or set
    `CUSTOM_IMAGE_RUNNER` to the actual runner name.
 
 ### 3 · Run the comparison
@@ -276,6 +287,22 @@ seconds saved
 percentage reduction
 overall speedup
 ```
+
+At the end of both paths, the workflow runs the same dependent workload:
+
+```powershell
+git -C benchmark-source rev-parse HEAD
+git -C benchmark-source ls-files
+# Insert the commit, file count, scenario, and time-to-ready into SQL Server,
+# then query the inserted row back.
+./scripts/Invoke-ExampleWorkload.ps1
+```
+
+The benchmark commit is resolved once and pinned for both jobs. The comparison
+fails if their commit SHA or tracked-file count differs. The final summary
+therefore proves not only that setup completed, but that both runners were
+ready to execute commands depending on **both** the monorepo and SQL Server
+after the reported number of minutes.
 
 The lightweight checkout of this example repository supplies only the
 PowerShell tooling and occurs **before** timing starts. The measured checkout is
@@ -319,6 +346,7 @@ executing a mutable tag directly.
 | [`scripts/Seed-GitRepository.ps1`](scripts/Seed-GitRepository.ps1) | Builds and sanitizes the bare repository mirror |
 | [`scripts/Initialize-WarmCheckout.ps1`](scripts/Initialize-WarmCheckout.ps1) | Creates the local reference clone before `actions/checkout` |
 | [`scripts/Test-SqlServer.ps1`](scripts/Test-SqlServer.ps1) | Waits for SQL Server, runs a query, and optionally creates the demo database |
+| [`scripts/Invoke-ExampleWorkload.ps1`](scripts/Invoke-ExampleWorkload.ps1) | Reads the pinned Git revision and records/query-verifies it in SQL Server |
 
 ## 🛡️ Security and operational guardrails
 

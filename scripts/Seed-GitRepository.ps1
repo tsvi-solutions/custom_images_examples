@@ -14,6 +14,12 @@ $ErrorActionPreference = "Stop"
 $mirrorPath = Join-Path $CacheRoot "repository.git"
 $repositoryUrlPath = Join-Path $CacheRoot "repository-url.txt"
 $normalizedRemoteUrl = $RemoteUrl.TrimEnd("/")
+if ($normalizedRemoteUrl.EndsWith(".git", [StringComparison]::OrdinalIgnoreCase)) {
+    $normalizedRemoteUrl = $normalizedRemoteUrl.Substring(
+        0,
+        $normalizedRemoteUrl.Length - 4
+    )
+}
 
 if (-not (Test-Path -LiteralPath (Join-Path $SourcePath ".git"))) {
     throw "'$SourcePath' is not a Git working tree."

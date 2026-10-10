@@ -13,6 +13,12 @@ $ErrorActionPreference = "Stop"
 $mirrorPath = Join-Path $CacheRoot "repository.git"
 $repositoryUrlPath = Join-Path $CacheRoot "repository-url.txt"
 $normalizedRemoteUrl = $RemoteUrl.TrimEnd("/")
+if ($normalizedRemoteUrl.EndsWith(".git", [StringComparison]::OrdinalIgnoreCase)) {
+    $normalizedRemoteUrl = $normalizedRemoteUrl.Substring(
+        0,
+        $normalizedRemoteUrl.Length - 4
+    )
+}
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 if (-not (Test-Path -LiteralPath (Join-Path $mirrorPath "HEAD"))) {
@@ -24,6 +30,9 @@ if (-not (Test-Path -LiteralPath $repositoryUrlPath)) {
 }
 
 $cachedRemoteUrl = (Get-Content -LiteralPath $repositoryUrlPath -Raw).Trim().TrimEnd("/")
+if ($cachedRemoteUrl.EndsWith(".git", [StringComparison]::OrdinalIgnoreCase)) {
+    $cachedRemoteUrl = $cachedRemoteUrl.Substring(0, $cachedRemoteUrl.Length - 4)
+}
 if (-not $cachedRemoteUrl.Equals(
     $normalizedRemoteUrl,
     [StringComparison]::OrdinalIgnoreCase
