@@ -26,7 +26,7 @@ workflow run—and every developer waiting on it—pays again.
 
 | Without a custom image | With a custom image |
 |---|---|
-| 📥 Download the complete Git history | ⚡ Reuse Git objects already on disk |
+| 📥 Download history and materialize every file | ⚡ Reuse Git objects and an already-materialized worktree |
 | 📦 Download SQL Server installation media | ✅ SQL Server is already installed |
 | 🛠️ Run unattended installation and configuration | 🟢 Start the service and query it |
 | ⏳ Repeat the work in every job | 🎯 Fetch only changes since the image build |
@@ -60,15 +60,17 @@ flowchart LR
     subgraph Image["CUSTOM IMAGE · Built weekly"]
         direction TB
         I1["🪞 Credential-free Git mirror"]
-        I2["🗄️ SQL Server 2022 Developer"]
-        I3["📸 GitHub snapshot"]
-        I1 --> I3
-        I2 --> I3
+        I2["📂 Materialized clean worktree"]
+        I3["🗄️ SQL Server 2022 Developer"]
+        I4["📸 GitHub snapshot"]
+        I1 --> I4
+        I2 --> I4
+        I3 --> I4
     end
 
     subgraph After["AFTER · Custom-image runner"]
         direction TB
-        A1["⚡ Clone from local mirror"]
+        A1["⚡ Activate prepared worktree"]
         A2["🔄 Fetch only the Git delta"]
         A3["✅ Query preinstalled SQL Server"]
         A4["🗄️ Create example database"]
@@ -91,14 +93,16 @@ flowchart LR
 
     class Trigger trigger;
     class B1,B2,B3,B4 slow;
-    class I1,I2,I3 image;
+    class I1,I2,I3,I4 image;
     class A1,A2,A3,A4 fast;
     class Result result;
 ```
 
-### ✅ Verified result
+### ✅ First-generation verified result
 
-The first validated comparison ran against `llvm/llvm-project` at commit
+The first validated comparison used image `1.0.0`, which cached Git objects but
+still materialized the worktree at job runtime. It ran against
+`llvm/llvm-project` at commit
 `d7b282cbfe7b8e6653beaf9159b2f8ce888cedaa` with **186,973 tracked files**:
 
 | Measurement | 🔴 Before: `windows-latest` | 🟢 After: custom image | Improvement |
@@ -112,10 +116,11 @@ The first validated comparison ran against `llvm/llvm-project` at commit
 
 [View the successful benchmark run →](https://github.com/tsvi-solutions/custom_images_examples/actions/runs/38059867565)
 
-The warm checkout still materializes the requested working tree—nearly 187,000
-files in this run—but it reuses the image's Git object store. The validated log
-contains no `Deleting the contents` event, proving that `actions/checkout`
-preserved the pre-seeded clone.
+That result proved the value of the local object store, but a later trace showed
+that `git checkout --detach` still spent about 2 min 23 sec creating nearly
+187,000 files. The current implementation therefore also bakes a clean,
+fully-materialized worktree into the image. A new benchmark result will replace
+the table after the next image version is built and validated.
 
 The benchmark does **not** inflate this example repository with generated
 files. By default, it performs a real full-history checkout of
@@ -130,25 +135,28 @@ instead of promising a synthetic “5-minute to 5-second” result.
 
 ## 🧠 The big idea
 
-The image-generation workflow checks out the selected benchmark monorepo once
-and creates a sanitized bare mirror:
+The image-generation workflow checks out the latest default-branch revision of
+the selected benchmark monorepo once and creates two credential-free assets:
 
 ```text
 C:\ProgramData\GitHubCustomImage\repository.git
+C:\ProgramData\GitHubCustomImage\worktree
 ```
 
-The consumer job creates a no-checkout clone backed by that local object store.
-It then hands control to `actions/checkout`, which authenticates normally and
-fetches the exact branch, tag, or pull-request SHA requested by the event.
-The bootstrap script normalizes the origin URL to the exact format expected by
-`actions/checkout`, preventing its repository-safety check from discarding the
-pre-seeded clone.
+The consumer job atomically moves the prepared worktree into
+`GITHUB_WORKSPACE` on the same disk. It then hands control to
+`actions/checkout`, which authenticates normally, fetches changes since the
+image build, and checks out the SHA resolved from the benchmark repository's
+latest `HEAD` at the start of the run. The bootstrap script normalizes the
+origin URL to the exact format expected by `actions/checkout`, preventing its
+repository-safety check from discarding the cache.
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Build as Image build
     participant Mirror as Local Git mirror
+    participant Tree as Prepared worktree
     participant Snapshot as Custom image
     participant Job as Workflow job
     participant GitHub as Benchmark monorepo
@@ -156,13 +164,14 @@ sequenceDiagram
     Note over Build,Snapshot: IMAGE BUILD · prepare once
     Build->>GitHub: Full-history checkout
     Build->>Mirror: Create credential-free bare mirror
+    Build->>Tree: Materialize + sanitize all tracked files
     Build->>Build: Install and validate SQL Server
     Build->>Snapshot: Capture with native snapshot keyword
 
     Note over Snapshot,GitHub: WORKFLOW JOB · reuse on every run
     Snapshot-->>Job: Start pre-warmed runner
-    Job->>Mirror: Create local reference clone
-    Job->>GitHub: Fetch only missing objects and requested ref
+    Job->>Tree: Move prepared tree into GITHUB_WORKSPACE
+    Job->>GitHub: Resolve latest HEAD + fetch only the delta
     Job->>Job: Query preinstalled SQL Server
 ```
 
@@ -170,9 +179,9 @@ sequenceDiagram
 
 | Benefit | How this example delivers it |
 |---|---|
-| ⚡ **Fast checkout** | Existing Git objects are read from the image; only the delta crosses the network |
-| 🔐 **No baked credentials** | The build uses `persist-credentials: false` and rejects auth headers or token markers |
-| 🎯 **Correct revision** | `actions/checkout` still resolves and checks out the event’s requested SHA |
+| ⚡ **Fast checkout** | Existing files and Git objects come from the image; only the delta crosses the network |
+| 🔐 **No baked credentials** | The build uses `persist-credentials: false` and scans both cached repositories for auth headers or token markers |
+| 🎯 **Latest, reproducible revision** | The workflow resolves the benchmark's latest `HEAD` once, then pins that SHA for both jobs |
 | 🍴 **Fork-friendly** | Runtime authentication remains read-only and scoped to the workflow job |
 | 🔁 **Repeatable** | A weekly image build refreshes Git history, Windows patches, and SQL media |
 | 📏 **Measurable** | Equivalent before/after jobs publish an automated comparison table |
@@ -246,9 +255,9 @@ flowchart LR
 7. Run **Build Windows monorepo image** from the Actions tab.
 
 The [image workflow](.github/workflows/build-custom-image.yml) installs and
-validates SQL Server, creates and verifies the Git mirror, checks for captured
-credentials, and publishes `windows-monorepo-sqlserver` only after every step
-succeeds.
+validates SQL Server, creates and verifies the Git mirror and prepared
+worktree, checks both for captured credentials, and publishes
+`windows-monorepo-sqlserver` only after every step succeeds.
 
 ### Benchmark repository configuration
 
@@ -257,14 +266,16 @@ succeeds.
 | `BENCHMARK_REPOSITORY` Actions variable | No | Repository to clone; defaults to `llvm/llvm-project` |
 | `BENCHMARK_TOKEN` Actions secret | Private repositories only | Fine-grained token with read-only Contents access to the benchmark repository |
 
-The image records the benchmark repository URL next to the mirror. If
+The image records the benchmark repository URL and cached commit next to the
+mirror and prepared worktree. If
 `BENCHMARK_REPOSITORY` changes without rebuilding the image, the after job
 fails with a clear mismatch message instead of publishing an invalid
 comparison. Run **Build Windows monorepo image** again after changing it.
 
 The token is used only by `actions/checkout`. The benchmark checkout sets
-`persist-credentials: false`, the mirror stores only a plain HTTPS remote, and
-the image build scans the Git configuration before creating the snapshot.
+`persist-credentials: false`, both cached repositories store only a plain HTTPS
+remote, and the image build scans both Git configurations before creating the
+snapshot.
 
 > [!NOTE]
 > [GitHub may continue provisioning the image for several hours after the
@@ -297,6 +308,17 @@ the image build scans the Git configuration before creating the snapshot.
 > versions](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#installing-custom-images)
 > when they become available. Pin a specific version only for an intentional
 > rollback or a reproducibility requirement.
+
+The workflows deliberately enforce both meanings of "latest":
+
+- **Latest image:** the larger runner's **Latest** selection adopts each newly
+  published image version;
+- **Latest source:** the comparison and canary resolve the benchmark
+  repository's current `HEAD` when each run starts, then pin that exact SHA so
+  validation cannot race a moving branch.
+
+An image without the prepared worktree now fails with a message to rebuild and
+select **Latest**. It cannot silently fall back to the slower object-only path.
 
 > [!TIP]
 > GitHub recommends a **dedicated runner group for image generation**. Restrict
@@ -344,8 +366,9 @@ PowerShell tooling and occurs **before** timing starts. The measured checkout is
 the separate benchmark monorepo:
 
 - **Before:** `actions/checkout` downloads its complete history from GitHub.
-- **After:** a local reference clone reuses the mirror baked into the image,
-  then `actions/checkout` downloads only objects added since the image build.
+- **After:** an already-materialized worktree is moved into the workspace,
+  then `actions/checkout` downloads and applies only changes added since the
+  image build.
 
 Both timers begin in the first measured step. Runner queue and provisioning
 time are excluded because those values reflect runner capacity and service
@@ -357,8 +380,8 @@ This repository uses two different schedules for two different jobs:
 
 | Automation | Cadence | Purpose |
 |---|---:|---|
-| **Clean image rebuild** | Sunday at 03:17 UTC | Rebase on GitHub's current `windows-latest`, reinstall SQL Server, refresh the Git mirror, validate everything, and publish the next `1.x` version |
-| **Consumer canary** | Daily at 09:47 UTC | Prove that the consumer runner can use the cached repository and SQL Server together, and fail if the cache is more than 10 days old |
+| **Clean image rebuild** | Sunday at 03:17 UTC | Rebase on GitHub's current `windows-latest`, reinstall SQL Server, refresh the Git mirror and worktree, validate everything, and publish the next `1.x` version |
+| **Consumer canary** | Daily at 09:47 UTC | Resolve the latest benchmark HEAD, prove the prepared worktree and SQL Server work together, and fail if the cache is more than 10 days old |
 
 The build schedule is declared in
 [`build-custom-image.yml`](.github/workflows/build-custom-image.yml), and the
@@ -411,8 +434,8 @@ For this example, a weekly clean rebase is the safer default:
 
 1. Start from GitHub's maintained `windows-latest`.
 2. Install SQL Server from the official current media.
-3. Recreate the credential-free Git mirror from the remote.
-4. Validate SQL Server, repository integrity, and credential hygiene.
+3. Recreate the credential-free Git mirror and materialized worktree.
+4. Validate SQL Server, both repositories, and credential hygiene.
 5. Publish the next
    [automatically incremented minor
    version](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#versioning)
@@ -470,8 +493,8 @@ executing a mutable tag directly.
 | [`.github/workflows/validate-custom-image.yml`](.github/workflows/validate-custom-image.yml) | Runs the daily freshness and end-to-end consumer canary |
 | [`.github/workflows/compare-before-after.yml`](.github/workflows/compare-before-after.yml) | Clones a real external monorepo, runs the fair before/after benchmark, and publishes results |
 | [`scripts/Install-SqlServer.ps1`](scripts/Install-SqlServer.ps1) | Downloads official media and installs SQL Server 2022 Developer silently |
-| [`scripts/Seed-GitRepository.ps1`](scripts/Seed-GitRepository.ps1) | Builds and sanitizes the bare repository mirror |
-| [`scripts/Initialize-WarmCheckout.ps1`](scripts/Initialize-WarmCheckout.ps1) | Creates the local reference clone before `actions/checkout` |
+| [`scripts/Seed-GitRepository.ps1`](scripts/Seed-GitRepository.ps1) | Builds and sanitizes the bare mirror and fully materialized worktree |
+| [`scripts/Initialize-WarmCheckout.ps1`](scripts/Initialize-WarmCheckout.ps1) | Atomically activates the prepared worktree before `actions/checkout` |
 | [`scripts/Test-SqlServer.ps1`](scripts/Test-SqlServer.ps1) | Waits for SQL Server, runs a query, and optionally creates the demo database |
 | [`scripts/Invoke-ExampleWorkload.ps1`](scripts/Invoke-ExampleWorkload.ps1) | Reads the pinned Git revision and records/query-verifies it in SQL Server |
 
@@ -483,8 +506,9 @@ executing a mutable tag directly.
 > to GitHub's [custom-image security best
 > practices](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#security-best-practices-for-custom-images).
 
-- **No credentials are captured.** The mirror uses a plain HTTPS origin, and
-  the build fails if it detects an authentication header or token marker.
+- **No credentials are captured.** Both cached repositories use a plain HTTPS
+  origin, and the build fails if either contains an authentication header or
+  token marker.
 - **Secrets arrive at runtime.** `actions/checkout` uses the job’s
   [automatically generated
   `GITHUB_TOKEN`](https://docs.github.com/en/enterprise-cloud@latest/actions/security-for-github-actions/security-guides/automatic-token-authentication).

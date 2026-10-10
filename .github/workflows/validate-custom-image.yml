@@ -34,8 +34,16 @@ jobs:
         shell: pwsh
         run: |
           $repositoryUrlPath = "C:\ProgramData\GitHubCustomImage\repository-url.txt"
+          $cachedCommitPath = "C:\ProgramData\GitHubCustomImage\cached-commit.txt"
+          $preparedWorktreePath = "C:\ProgramData\GitHubCustomImage\worktree\.git"
           if (-not (Test-Path -LiteralPath $repositoryUrlPath)) {
               throw "The custom image repository marker is missing at '$repositoryUrlPath'."
+          }
+          if (-not (Test-Path -LiteralPath $cachedCommitPath)) {
+              throw "The cached commit marker is missing. Rebuild the custom image."
+          }
+          if (-not (Test-Path -LiteralPath $preparedWorktreePath)) {
+              throw "The prepared worktree is missing. Rebuild the custom image."
           }
 
           $marker = Get-Item -LiteralPath $repositoryUrlPath
@@ -49,8 +57,22 @@ jobs:
           "age_days=$($age.TotalDays.ToString('0.0', [Globalization.CultureInfo]::InvariantCulture))" >> $env:GITHUB_OUTPUT
           "is_stale=$($isStale.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
           "repository_url=$repositoryUrl" >> $env:GITHUB_OUTPUT
+          "cached_commit=$((Get-Content -LiteralPath $cachedCommitPath -Raw).Trim())" >> $env:GITHUB_OUTPUT
 
-      - name: Initialize workspace from image cache
+      - name: Resolve latest benchmark revision
+        id: revision
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.BENCHMARK_TOKEN || github.token }}
+        run: |
+          $sha = gh api "repos/$env:BENCHMARK_REPOSITORY/commits/HEAD" --jq .sha
+          if ($LASTEXITCODE -ne 0 -or -not $sha) {
+            throw "Unable to resolve the latest benchmark repository revision."
+          }
+          "sha=$sha" >> $env:GITHUB_OUTPUT
+          Write-Host "Latest benchmark revision: $sha"
+
+      - name: Activate prepared worktree
         id: initialize
         shell: pwsh
         run: |
@@ -67,6 +89,7 @@ jobs:
         with:
           repository: ${{ env.BENCHMARK_REPOSITORY }}
           token: ${{ secrets.BENCHMARK_TOKEN || github.token }}
+          ref: ${{ steps.revision.outputs.sha }}
           path: benchmark-source
           fetch-depth: 0
           persist-credentials: false
@@ -94,6 +117,12 @@ jobs:
             -RepositoryPath "$env:GITHUB_WORKSPACE\benchmark-source" `
             -Scenario After `
             -ReadySeconds $readySeconds
+          if (-not $evidence.CommitSha.Equals(
+            "${{ steps.revision.outputs.sha }}",
+            [StringComparison]::OrdinalIgnoreCase
+          )) {
+            throw "The checked-out commit does not match the latest revision resolved for this run."
+          }
 
           "commit_sha=$($evidence.CommitSha)" >> $env:GITHUB_OUTPUT
           "tracked_files=$($evidence.TrackedFiles)" >> $env:GITHUB_OUTPUT
@@ -120,6 +149,8 @@ jobs:
           | Freshness limit | **$env:CUSTOM_IMAGE_MAX_AGE_DAYS days** |
           | Cache timestamp | ``$builtAt`` |
           | Cached repository | ``${{ steps.image.outputs.repository_url }}`` |
+          | Image-cached commit | ``${{ steps.image.outputs.cached_commit }}`` |
+          | Latest requested commit | ``${{ steps.revision.outputs.sha }}`` |
           | Warm initialization | **${{ steps.initialize.outputs.seconds }} sec** |
           | SQL Server readiness | **${{ steps.sql.outputs.seconds }} sec** |
           | End-to-end readiness | **${{ steps.proof.outputs.ready_seconds }} sec** |

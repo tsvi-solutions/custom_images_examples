@@ -11,6 +11,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $mirrorPath = Join-Path $CacheRoot "repository.git"
+$preparedWorktreePath = Join-Path $CacheRoot "worktree"
 $repositoryUrlPath = Join-Path $CacheRoot "repository-url.txt"
 $normalizedRemoteUrl = $RemoteUrl.TrimEnd("/")
 if ($normalizedRemoteUrl.EndsWith(".git", [StringComparison]::OrdinalIgnoreCase)) {
@@ -40,16 +41,37 @@ if (-not $cachedRemoteUrl.Equals(
     throw "The image caches '$cachedRemoteUrl', not '$normalizedRemoteUrl'. Rebuild the image after changing BENCHMARK_REPOSITORY."
 }
 
-New-Item -ItemType Directory -Path $WorkspacePath -Force | Out-Null
-$existingEntries = @(Get-ChildItem -LiteralPath $WorkspacePath -Force)
-if ($existingEntries.Count -ne 0) {
-    throw "The runner workspace must be empty before the warm checkout is initialized."
+$workspaceParent = Split-Path -Parent $WorkspacePath
+New-Item -ItemType Directory -Path $workspaceParent -Force | Out-Null
+
+if (Test-Path -LiteralPath $WorkspacePath) {
+    $existingEntries = @(Get-ChildItem -LiteralPath $WorkspacePath -Force)
+    if ($existingEntries.Count -ne 0) {
+        throw "The runner workspace must be empty before the warm checkout is initialized."
+    }
+    [System.IO.Directory]::Delete($WorkspacePath, $false)
 }
 
-& git clone --reference-if-able $mirrorPath --no-checkout $mirrorPath $WorkspacePath
-if ($LASTEXITCODE -ne 0) {
-    throw "Unable to initialize the workspace from the image cache."
+$preparedGitPath = Join-Path $preparedWorktreePath ".git"
+if (-not (Test-Path -LiteralPath $preparedGitPath)) {
+    throw "The custom image does not contain a prepared worktree at '$preparedWorktreePath'. Rebuild the image and configure the consumer runner to use Latest."
 }
+
+$sourceRoot = [System.IO.Path]::GetPathRoot(
+    [System.IO.Path]::GetFullPath($preparedWorktreePath)
+)
+$destinationRoot = [System.IO.Path]::GetPathRoot(
+    [System.IO.Path]::GetFullPath($WorkspacePath)
+)
+if (-not $sourceRoot.Equals(
+    $destinationRoot,
+    [StringComparison]::OrdinalIgnoreCase
+)) {
+    throw "The prepared worktree and runner workspace must be on the same volume."
+}
+
+[System.IO.Directory]::Move($preparedWorktreePath, $WorkspacePath)
+Write-Host "Activated the image's fully materialized worktree."
 
 & git -C $WorkspacePath remote set-url origin $normalizedRemoteUrl
 if ($LASTEXITCODE -ne 0) {

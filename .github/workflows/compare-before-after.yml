@@ -246,7 +246,7 @@ jobs:
         if: ${{ inputs.telemetry }}
         uses: tsviz/actions-runner-telemetry@c15eb88c652d9a26a572438a0d1b8c10af782e2e # v1
 
-      - name: Start timer and initialize from image cache
+      - name: Start timer and activate prepared worktree
         id: initialize
         shell: pwsh
         env:
@@ -590,7 +590,7 @@ jobs:
           | # | Workflow phase | 🔴 Before | 🟢 Custom image | In time-to-ready? |
           |---:|---|---:|---:|:---:|
           | 1 | Example tooling checkout | $(Format-Duration $beforeTooling) | $(Format-Duration $afterTooling) | No |
-          | 2 | Initialize from image cache | — | $(Format-Duration $afterCacheInit) | Yes |
+          | 2 | Activate prepared worktree | — | $(Format-Duration $afterCacheInit) | Yes |
           | 3 | Repository checkout action | $(Format-Duration $beforeCheckoutAction) | $(Format-Duration $afterCheckoutAction) | Yes |
           | 4 | SQL Server install/readiness | $(Format-Duration $beforeSql) | $(Format-Duration $afterSql) | Yes |
           | 5 | Timing and readiness bookkeeping | $(Format-Duration $beforeOverhead) | $(Format-Duration $afterOverhead) | Yes |
@@ -611,7 +611,7 @@ jobs:
               subgraph After["🟢 AFTER · custom image"]
                   direction LR
                   A1["Tooling<br/>$(Format-Duration $afterTooling)"] -->
-                  A2["Local cache init<br/>$(Format-Duration $afterCacheInit)"] -->
+                  A2["Activate worktree<br/>$(Format-Duration $afterCacheInit)"] -->
                   A3["Delta checkout<br/>$(Format-Duration $afterCheckoutAction)"] -->
                   A4["SQL ready<br/>$(Format-Duration $afterSql)"] -->
                   A5["Bookkeeping<br/>$(Format-Duration $afterOverhead)"] -->
@@ -632,7 +632,7 @@ jobs:
           | Tracked files | $(([int]$env:BEFORE_FILES).ToString("N0")) on both runners |
           | Git dependency | Commit and file list read successfully |
           | SQL dependency | Evidence inserted and queried back successfully |
-          | Cache preservation | Existing object store accepted by **actions/checkout** |
+          | Cache preservation | Prepared worktree and object store accepted by **actions/checkout** |
 
           <details>
           <summary><strong>Methodology and exclusions</strong></summary>

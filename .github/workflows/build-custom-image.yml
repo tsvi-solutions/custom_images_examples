@@ -66,16 +66,25 @@ jobs:
         shell: pwsh
         run: ./image-source/scripts/Test-SqlServer.ps1
 
-      - name: Validate the credential-free mirror
+      - name: Validate the credential-free Git cache
         shell: pwsh
         env:
           MIRROR_PATH: C:\ProgramData\GitHubCustomImage\repository.git
+          WORKTREE_PATH: C:\ProgramData\GitHubCustomImage\worktree
         run: |
           git -C $env:MIRROR_PATH fsck --full
+          git -C $env:WORKTREE_PATH fsck --connectivity-only
 
-          $config = git -C $env:MIRROR_PATH config --list --show-origin
-          if ($config -match 'http\..*extraheader|AUTHORIZATION|x-access-token') {
-            throw "The image cache contains GitHub credentials."
+          $status = @(git -C $env:WORKTREE_PATH status --porcelain)
+          if ($LASTEXITCODE -ne 0 -or $status.Count -ne 0) {
+            throw "The prepared worktree is not clean."
+          }
+
+          foreach ($repositoryPath in @($env:MIRROR_PATH, $env:WORKTREE_PATH)) {
+            $config = git -C $repositoryPath config --list --show-origin
+            if ($config -match 'http\..*extraheader|AUTHORIZATION|x-access-token') {
+              throw "The image cache contains GitHub credentials in '$repositoryPath'."
+            }
           }
 
       - name: Remove the temporary checkout

@@ -12,7 +12,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 $mirrorPath = Join-Path $CacheRoot "repository.git"
+$worktreePath = Join-Path $CacheRoot "worktree"
 $repositoryUrlPath = Join-Path $CacheRoot "repository-url.txt"
+$cachedCommitPath = Join-Path $CacheRoot "cached-commit.txt"
 $normalizedRemoteUrl = $RemoteUrl.TrimEnd("/")
 if ($normalizedRemoteUrl.EndsWith(".git", [StringComparison]::OrdinalIgnoreCase)) {
     $normalizedRemoteUrl = $normalizedRemoteUrl.Substring(
@@ -26,8 +28,10 @@ if (-not (Test-Path -LiteralPath (Join-Path $SourcePath ".git"))) {
 }
 
 New-Item -ItemType Directory -Path $CacheRoot -Force | Out-Null
-if (Test-Path -LiteralPath $mirrorPath) {
-    Remove-Item -LiteralPath $mirrorPath -Recurse -Force
+foreach ($path in @($mirrorPath, $worktreePath)) {
+    if (Test-Path -LiteralPath $path) {
+        Remove-Item -LiteralPath $path -Recurse -Force
+    }
 }
 
 & git clone --mirror $SourcePath $mirrorPath
@@ -47,10 +51,40 @@ if ($LASTEXITCODE -ne 0) {
     throw "The image's Git mirror failed validation."
 }
 
+& git clone --reference-if-able $mirrorPath $mirrorPath $worktreePath
+if ($LASTEXITCODE -ne 0) {
+    throw "Unable to create the image's prepared Git worktree."
+}
+
+& git -C $worktreePath remote set-url origin $normalizedRemoteUrl
+if ($LASTEXITCODE -ne 0) {
+    throw "Unable to sanitize the prepared worktree's origin URL."
+}
+
+& git -C $worktreePath config --unset-all http.https://github.com/.extraheader 2>$null
+& git -C $worktreePath config gc.auto 0
+
+$worktreeStatus = @(& git -C $worktreePath status --porcelain)
+if ($LASTEXITCODE -ne 0 -or $worktreeStatus.Count -ne 0) {
+    throw "The image's prepared worktree is not clean."
+}
+
+$cachedCommit = (& git -C $worktreePath rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $cachedCommit) {
+    throw "Unable to identify the prepared worktree commit."
+}
+
 Set-Content `
     -LiteralPath $repositoryUrlPath `
     -Value $normalizedRemoteUrl `
     -Encoding utf8 `
     -NoNewline
 
+Set-Content `
+    -LiteralPath $cachedCommitPath `
+    -Value $cachedCommit `
+    -Encoding ascii `
+    -NoNewline
+
 Write-Host "Seeded credential-free mirror at '$mirrorPath'."
+Write-Host "Prepared worktree at '$worktreePath' on commit $cachedCommit."
