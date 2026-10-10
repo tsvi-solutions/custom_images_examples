@@ -196,21 +196,19 @@ Changing `BENCHMARK_REPOSITORY` requires rebuilding the image.
 
 ### Scale across a month · paid-runner scenario
 
-| Runs / month | Gross runner savings | After $4.67 maintenance* | Engineering capacity recovered** |
-|---:|---:|---:|---:|
-| 25 | $6.60 | **$1.93** | **$121** |
-| 100 | $26.40 | **$21.73** | **$485** |
-| 1,000 | $264.00 | **$259.33** | **$4,850** |
-| 10,000 | $2,640.00 | **$2,635.33** | **$48,500** |
+| Runs / month | Runner compute saved* | Engineering capacity recovered** |
+|---:|---:|---:|
+| 25 | **$1.93** | **$121** |
+| 100 | **$21.73** | **$485** |
+| 1,000 | **$259.33** | **$4,850** |
+| 10,000 | **$2,635.33** | **$48,500** |
 
 > At **1,000 runs per month**, the model returns **$259/month in runner
 > compute** plus **$4,850/month in engineering capacity** before storage.
 
 <sub>
-* Same paid Windows 4-core runner for both paths; subtracts the observed weekly
-image-build and daily-canary compute. Storage is excluded.<br/>
-** One developer at $100/hour with only 25% of the 11 min 39 sec improvement
-treated as genuinely blocked time. Capacity is not a payroll reduction.
+* After $4.67/month image-build and canary compute; storage excluded.<br/>
+** One developer at $100/hour and 25% blocked time; not payroll reduction.
 </sub>
 
 > [!WARNING]
