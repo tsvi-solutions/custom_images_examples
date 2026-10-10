@@ -1,0 +1,144 @@
+name: Validate custom image freshness
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "47 9 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-custom-image
+  cancel-in-progress: false
+
+env:
+  BENCHMARK_REPOSITORY: ${{ vars.BENCHMARK_REPOSITORY || 'llvm/llvm-project' }}
+  CUSTOM_IMAGE_MAX_AGE_DAYS: ${{ vars.CUSTOM_IMAGE_MAX_AGE_DAYS || '10' }}
+
+jobs:
+  canary:
+    name: Cached Git + SQL Server canary
+    runs-on: ${{ vars.CUSTOM_IMAGE_RUNNER || 'windows-monorepo-sqlserver-runner' }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out validation tooling
+        uses: actions/checkout@v4
+        with:
+          path: tooling
+          persist-credentials: false
+
+      - name: Inspect cached image age
+        id: image
+        shell: pwsh
+        run: |
+          $repositoryUrlPath = "C:\ProgramData\GitHubCustomImage\repository-url.txt"
+          if (-not (Test-Path -LiteralPath $repositoryUrlPath)) {
+              throw "The custom image repository marker is missing at '$repositoryUrlPath'."
+          }
+
+          $marker = Get-Item -LiteralPath $repositoryUrlPath
+          $builtAt = $marker.LastWriteTimeUtc
+          $age = [DateTime]::UtcNow - $builtAt
+          $maxAgeDays = [int]$env:CUSTOM_IMAGE_MAX_AGE_DAYS
+          $isStale = $age.TotalDays -gt $maxAgeDays
+          $repositoryUrl = (Get-Content -LiteralPath $repositoryUrlPath -Raw).Trim()
+
+          "built_at=$($builtAt.ToString('u'))" >> $env:GITHUB_OUTPUT
+          "age_days=$($age.TotalDays.ToString('0.0', [Globalization.CultureInfo]::InvariantCulture))" >> $env:GITHUB_OUTPUT
+          "is_stale=$($isStale.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "repository_url=$repositoryUrl" >> $env:GITHUB_OUTPUT
+
+      - name: Initialize workspace from image cache
+        id: initialize
+        shell: pwsh
+        run: |
+          [System.Diagnostics.Stopwatch]::GetTimestamp() |
+            Set-Content -LiteralPath "$env:RUNNER_TEMP\canary-start.txt"
+          $seconds = & "$env:GITHUB_WORKSPACE\tooling\scripts\Initialize-WarmCheckout.ps1" `
+            -WorkspacePath "$env:GITHUB_WORKSPACE\benchmark-source" `
+            -RemoteUrl "https://github.com/$env:BENCHMARK_REPOSITORY"
+          "seconds=$seconds" >> $env:GITHUB_OUTPUT
+
+      - name: Update cached checkout
+        id: checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.BENCHMARK_REPOSITORY }}
+          token: ${{ secrets.BENCHMARK_TOKEN || github.token }}
+          path: benchmark-source
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate SQL Server
+        id: sql
+        shell: pwsh
+        run: |
+          $timer = [System.Diagnostics.Stopwatch]::StartNew()
+          & "$env:GITHUB_WORKSPACE\tooling\scripts\Test-SqlServer.ps1" `
+            -CreateExampleDatabase `
+            -TimeoutSeconds 90
+          $timer.Stop()
+          "seconds=$($timer.Elapsed.TotalSeconds.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture))" >> $env:GITHUB_OUTPUT
+
+      - name: Prove Git and SQL Server work together
+        id: proof
+        shell: pwsh
+        run: |
+          $startedAt = [long](Get-Content -LiteralPath "$env:RUNNER_TEMP\canary-start.txt")
+          $readySeconds = (
+            [System.Diagnostics.Stopwatch]::GetTimestamp() - $startedAt
+          ) / [System.Diagnostics.Stopwatch]::Frequency
+          $evidence = & "$env:GITHUB_WORKSPACE\tooling\scripts\Invoke-ExampleWorkload.ps1" `
+            -RepositoryPath "$env:GITHUB_WORKSPACE\benchmark-source" `
+            -Scenario After `
+            -ReadySeconds $readySeconds
+
+          "commit_sha=$($evidence.CommitSha)" >> $env:GITHUB_OUTPUT
+          "tracked_files=$($evidence.TrackedFiles)" >> $env:GITHUB_OUTPUT
+          "ready_seconds=$($readySeconds.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture))" >> $env:GITHUB_OUTPUT
+
+      - name: Publish canary summary
+        if: always()
+        shell: pwsh
+        run: |
+          $stale = "${{ steps.image.outputs.is_stale }}" -eq "true"
+          $status = if ($stale) { "⚠️ Stale" } else { "✅ Fresh" }
+          $age = "${{ steps.image.outputs.age_days }}"
+          $builtAt = "${{ steps.image.outputs.built_at }}"
+          $commit = "${{ steps.proof.outputs.commit_sha }}"
+          $trackedFiles = "${{ steps.proof.outputs.tracked_files }}"
+
+          @"
+          # 🩺 Custom image canary
+
+          | Check | Result |
+          |---|---|
+          | Image freshness | **$status** |
+          | Cached content age | **$age days** |
+          | Freshness limit | **$env:CUSTOM_IMAGE_MAX_AGE_DAYS days** |
+          | Cache timestamp | ``$builtAt`` |
+          | Cached repository | ``${{ steps.image.outputs.repository_url }}`` |
+          | Warm initialization | **${{ steps.initialize.outputs.seconds }} sec** |
+          | SQL Server readiness | **${{ steps.sql.outputs.seconds }} sec** |
+          | End-to-end readiness | **${{ steps.proof.outputs.ready_seconds }} sec** |
+          | Verified commit | ``$commit`` |
+          | Tracked files | **$trackedFiles** |
+
+          ```mermaid
+          flowchart LR
+              Image["🖼️ Latest custom image"] --> Cache["🪞 Cached Git mirror"]
+              Image --> SQL["🗄️ SQL Server"]
+              Cache --> Checkout["📂 Warm checkout"]
+              SQL --> Proof["🧪 Git-to-SQL proof"]
+              Checkout --> Proof
+              Proof --> Healthy["✅ Runner ready"]
+          ```
+          "@ >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Enforce image freshness
+        if: always() && steps.image.outputs.is_stale == 'true'
+        shell: pwsh
+        run: |
+          throw "The custom image cache is ${{ steps.image.outputs.age_days }} days old. The limit is $env:CUSTOM_IMAGE_MAX_AGE_DAYS days. Check the scheduled image build and confirm the consumer runner tracks Latest."

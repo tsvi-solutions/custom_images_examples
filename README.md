@@ -181,9 +181,11 @@ sequenceDiagram
 
 ### 1 · Create the image-generation runner
 
-Custom images are available for **GitHub-hosted larger runners**. The custom
-image can start from GitHub’s `windows-latest` image, but it is consumed through
-a named larger runner—not through the standard `windows-latest` label.
+[Custom images are available for GitHub-hosted larger
+runners](https://docs.github.com/en/enterprise-cloud@latest/actions/concepts/runners/larger-runners).
+The custom image can start from GitHub’s `windows-latest` image, but it is
+consumed through a named larger runner—not through the standard
+`windows-latest` label.
 
 > [!IMPORTANT]
 > This is the bootstrap step—**you do not need an existing custom image**.
@@ -195,8 +197,11 @@ a named larger runner—not through the standard `windows-latest` label.
 > Create this runner from **organization settings**, not repository settings.
 > Repository **Settings → Actions → Runners** only offers self-hosted runners.
 > GitHub-hosted larger runners require a **GitHub Team** or
-> **GitHub Enterprise Cloud** organization plan. Custom images cannot be built
-> with a standard `windows-latest` job or a self-hosted runner.
+> **GitHub Enterprise Cloud** organization plan, as reflected by the
+> [custom-image storage availability by
+> plan](https://docs.github.com/en/enterprise-cloud@latest/billing/concepts/product-billing/github-actions#free-use-of-github-actions).
+> Custom images cannot be built with a standard `windows-latest` job or a
+> self-hosted runner.
 
 ```mermaid
 flowchart LR
@@ -227,7 +232,8 @@ flowchart LR
 2. Click **New runner → New GitHub-hosted runner**. If that choice is absent,
    verify that you are an organization owner and that the organization uses
    GitHub Team or GitHub Enterprise Cloud.
-3. Enable custom images in the organization or enterprise Actions policy.
+3. [Enable custom images in the organization or enterprise Actions
+   policy](https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-github-actions-in-your-enterprise#custom-images).
 4. Create the GitHub-hosted larger runner with:
    - **Platform:** Windows x64
    - **Base image:** GitHub-owned `windows-latest`
@@ -261,8 +267,11 @@ The token is used only by `actions/checkout`. The benchmark checkout sets
 the image build scans the Git configuration before creating the snapshot.
 
 > [!NOTE]
-> GitHub may continue provisioning the image after the workflow completes.
-> Each successful run creates a new image version and consumes Actions storage.
+> [GitHub may continue provisioning the image for several hours after the
+> workflow completes](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#generating-a-custom-image).
+> Each successful run creates a new image version and consumes
+> [separately billed custom-image
+> storage](https://docs.github.com/en/enterprise-cloud@latest/billing/concepts/product-billing/github-actions#custom-image-storage).
 
 ### 2 · Create the custom-image runner
 
@@ -274,12 +283,27 @@ the image build scans the Git configuration before creating the snapshot.
 
 1. Create another GitHub-hosted larger runner.
 2. Choose **Windows x64**.
-3. On the **Custom** image tab, select `windows-monorepo-sqlserver` version
-   `1.0.0` (or the latest ready version).
+3. On the **Custom** image tab, select `windows-monorepo-sqlserver` and choose
+   **Latest** as the version.
 4. Choose **4 cores, 16 GB RAM, 150 GB SSD** and maximum concurrency **1**.
-5. Use the same runner group as the image-generation runner.
+5. Assign it to a runner group that this repository can access.
 6. Name it `windows-monorepo-sqlserver-runner`, or set
    `CUSTOM_IMAGE_RUNNER` to the actual runner name.
+
+> [!IMPORTANT]
+> Do not leave the consumer runner pinned to `1.0.0` if you want automatic
+> maintenance. GitHub documents that a runner configured with
+> [**Latest** automatically adopts new image
+> versions](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#installing-custom-images)
+> when they become available. Pin a specific version only for an intentional
+> rollback or a reproducibility requirement.
+
+> [!TIP]
+> GitHub recommends a **dedicated runner group for image generation**. Restrict
+> that group to trusted image-building repositories; the consumer runner can
+> use a separate group shared with repositories that need the image. See
+> [Security best practices for custom
+> images](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#security-best-practices-for-custom-images).
 
 ### 3 · Run the comparison
 
@@ -327,6 +351,97 @@ Both timers begin in the first measured step. Runner queue and provisioning
 time are excluded because those values reflect runner capacity and service
 conditions—not setup work removed by the image.
 
+## 🔄 Keep the image current
+
+This repository uses two different schedules for two different jobs:
+
+| Automation | Cadence | Purpose |
+|---|---:|---|
+| **Clean image rebuild** | Sunday at 03:17 UTC | Rebase on GitHub's current `windows-latest`, reinstall SQL Server, refresh the Git mirror, validate everything, and publish the next `1.x` version |
+| **Consumer canary** | Daily at 09:47 UTC | Prove that the consumer runner can use the cached repository and SQL Server together, and fail if the cache is more than 10 days old |
+
+The build schedule is declared in
+[`build-custom-image.yml`](.github/workflows/build-custom-image.yml), and the
+canary lives in
+[`validate-custom-image.yml`](.github/workflows/validate-custom-image.yml).
+Set the optional `CUSTOM_IMAGE_MAX_AGE_DAYS` organization or repository
+variable to change the default 10-day freshness limit. GitHub evaluates
+[`schedule` cron expressions in
+UTC](https://docs.github.com/en/enterprise-cloud@latest/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+
+```mermaid
+flowchart LR
+    Cron["🕒 Weekly cron"]
+    Base["🪟 Fresh GitHub-owned<br/>windows-latest"]
+    Build["🔨 Install + seed + validate"]
+    Version["📸 New image version<br/>1.1.0 → 1.2.0 → …"]
+    Latest["🏷️ Latest"]
+    Runner["🏃 Consumer larger runner"]
+    Canary["🩺 Daily Git + SQL canary"]
+
+    Cron --> Base --> Build --> Version --> Latest
+    Latest -->|"automatic adoption"| Runner --> Canary
+
+    classDef trigger fill:#8250df,color:#fff,stroke:#6e40c9
+    classDef image fill:#0969da,color:#fff,stroke:#0550ae
+    classDef success fill:#1a7f37,color:#fff,stroke:#116329
+    class Cron trigger
+    class Base,Build,Version,Latest image
+    class Runner,Canary success
+```
+
+### Why the weekly job is a clean rebuild
+
+For custom images, "layering" means
+[choosing an existing custom image as a build
+base](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#setting-up-an-image-generation-runner),
+not mounting a Docker-style layer at job runtime. GitHub documents that
+[every successful job containing `snapshot` creates another image
+version](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#generating-a-custom-image)
+and consumes custom-image storage.
+
+It is possible to use one custom image as the base for another—for example, a
+shared Windows toolchain image feeding several team-specific images. However,
+[a derived image inherits the expiration timeline of its base
+image](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#expiration-for-images-built-from-custom-images).
+Repeatedly building on an old custom base therefore does not refresh Windows
+indefinitely and can create a long, fragile dependency chain.
+
+For this example, a weekly clean rebase is the safer default:
+
+1. Start from GitHub's maintained `windows-latest`.
+2. Install SQL Server from the official current media.
+3. Recreate the credential-free Git mirror from the remote.
+4. Validate SQL Server, repository integrity, and credential hygiene.
+5. Publish the next
+   [automatically incremented minor
+   version](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#versioning)
+   through `snapshot: version: "1.*"`.
+6. Let the consumer runner's **Latest** selection adopt the ready version.
+
+[GitHub recommends a weekly image-generation
+schedule](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#generating-a-custom-image).
+A nightly snapshot is reasonable only when the cached repository changes so
+quickly that one week of Git deltas materially affects jobs. At roughly 150 GB
+per version, nightly builds can add storage rapidly; configure an appropriate
+[custom-image retention
+policy](https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-github-actions-in-your-enterprise#custom-images-retention-policies)
+before increasing the cadence. A daily canary gives early failure detection
+without creating seven full snapshots per week.
+
+### Promotion and rollback
+
+The **Latest** selection is the promotion mechanism for this example.
+[GitHub generates an image only after the image-generation job
+succeeds](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#generating-a-custom-image),
+and the consumer runner follows the newest available version. The daily canary
+then checks the end-to-end consumer experience.
+
+For rollback, edit `windows-monorepo-sqlserver-runner`, replace **Latest** with
+the previous known-good version, and rerun the canary. After the issue is fixed,
+switch the runner back to **Latest**. Keep enough image versions in the
+retention policy to cover the desired rollback window.
+
 ## 📊 Optional: see what the runners are doing
 
 Enable the **Collect CPU, memory, disk, network, and process telemetry** option
@@ -352,6 +467,7 @@ executing a mutable tag directly.
 | File | Role |
 |---|---|
 | [`.github/workflows/build-custom-image.yml`](.github/workflows/build-custom-image.yml) | Builds, validates, versions, and snapshots the Windows image |
+| [`.github/workflows/validate-custom-image.yml`](.github/workflows/validate-custom-image.yml) | Runs the daily freshness and end-to-end consumer canary |
 | [`.github/workflows/compare-before-after.yml`](.github/workflows/compare-before-after.yml) | Clones a real external monorepo, runs the fair before/after benchmark, and publishes results |
 | [`scripts/Install-SqlServer.ps1`](scripts/Install-SqlServer.ps1) | Downloads official media and installs SQL Server 2022 Developer silently |
 | [`scripts/Seed-GitRepository.ps1`](scripts/Seed-GitRepository.ps1) | Builds and sanitizes the bare repository mirror |
@@ -363,16 +479,24 @@ executing a mutable tag directly.
 
 > [!CAUTION]
 > Never bake secrets, access tokens, production data, or long-lived
-> credentials into a custom image.
+> credentials into a custom image. Restrict image-generation access according
+> to GitHub's [custom-image security best
+> practices](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#security-best-practices-for-custom-images).
 
 - **No credentials are captured.** The mirror uses a plain HTTPS origin, and
   the build fails if it detects an authentication header or token marker.
-- **Secrets arrive at runtime.** `actions/checkout` uses the job’s short-lived
-  `GITHUB_TOKEN`.
-- **Image freshness matters.** The build runs weekly, following GitHub’s
-  recommendation; increase the cadence for high-churn monorepos.
+- **Secrets arrive at runtime.** `actions/checkout` uses the job’s
+  [automatically generated
+  `GITHUB_TOKEN`](https://docs.github.com/en/enterprise-cloud@latest/actions/security-for-github-actions/security-guides/automatic-token-authentication).
+- **Image freshness matters.** The build runs
+  [weekly, following GitHub’s
+  recommendation](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#generating-a-custom-image);
+  increase the cadence for high-churn monorepos.
 - **Storage is not free.** Every successful snapshot creates an image version.
-  Configure an appropriate custom-image retention policy.
+  Review [custom-image storage
+  billing](https://docs.github.com/en/enterprise-cloud@latest/billing/concepts/product-billing/github-actions#custom-image-storage)
+  and configure an appropriate
+  [retention policy](https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-github-actions-in-your-enterprise#custom-images-retention-policies).
 - **SQL Server Developer is for development and CI.** Review Microsoft’s terms
   and choose a properly licensed edition for other uses.
 - **Test data stays disposable.** The benchmark creates its database at job
@@ -397,7 +521,11 @@ answer the same three questions:
 
 ## 📚 References
 
-- [Using custom images for GitHub-hosted larger runners](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
+- [GitHub Docs: Using custom images for GitHub-hosted larger runners](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
+- [GitHub Docs: Larger runners](https://docs.github.com/en/enterprise-cloud@latest/actions/concepts/runners/larger-runners)
+- [GitHub Docs: Scheduled workflow events](https://docs.github.com/en/enterprise-cloud@latest/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
+- [GitHub Docs: Actions billing and custom-image storage](https://docs.github.com/en/enterprise-cloud@latest/billing/concepts/product-billing/github-actions#custom-image-storage)
+- [GitHub Docs: Custom-image retention policies](https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-github-actions-in-your-enterprise#custom-images-retention-policies)
 - [Runner Telemetry Action](https://github.com/marketplace/actions/runner-telemetry-action)
 - [SQL Server unattended installation](https://learn.microsoft.com/sql/database-engine/install-windows/install-sql-server-from-the-command-prompt)
 - [Community custom-image examples](https://github.com/km-allthethings/build-custom-images)
