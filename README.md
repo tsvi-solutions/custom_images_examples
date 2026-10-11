@@ -17,41 +17,59 @@ image—without taking on a fleet of self-hosted runners.
 
 ## ↯ The custom-image advantage
 
-```mermaid
-flowchart LR
-    Base["GITHUB-HOSTED BASE<br/>Fresh VM · Managed image · Autoscaling"]
-    Warm["YOUR WARM LAYER<br/>Tools · Services · Repositories · Configuration"]
-    Ready["READY-TO-WORK RUNNER<br/>Consistent · Ephemeral · Fast"]
-
-    Base --> Ready
-    Warm --> Ready
-
-    classDef base fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:3px
-    classDef warm fill:#fff8c5,color:#633c01,stroke:#bf8700,stroke-width:3px
-    classDef ready fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:3px
-    class Base base
-    class Warm warm
-    class Ready ready
-```
+### Move setup out of every run
 
 <table>
 <tr>
-<td align="center" width="25%"><strong>FAST START</strong><br/><sub>Remove repeated setup from the job path</sub></td>
-<td align="center" width="25%"><strong>MANAGED BASE</strong><br/><sub>Build from GitHub-owned runner images</sub></td>
-<td align="center" width="25%"><strong>CONSISTENT</strong><br/><sub>Start jobs from a validated environment</sub></td>
-<td align="center" width="25%"><strong>ELASTIC</strong><br/><sub>Keep larger-runner autoscaling and controls</sub></td>
+<td align="center" width="35%">
+<sub>EVERY RUN STARTS COLD</sub>
+<h2>12 min 06 sec</h2>
+<strong>Clone everything · Install software</strong>
+</td>
+<td align="center" width="30%">
+<sub>PREPARE ONCE</sub>
+<h2>Custom image</h2>
+<strong>GitHub base + your warm layer</strong>
+</td>
+<td align="center" width="35%">
+<sub>EVERY RUN STARTS READY</sub>
+<h2>28 sec</h2>
+<strong>Check freshness · Fetch the delta</strong>
+</td>
 </tr>
 </table>
 
-GitHub-hosted jobs start in clean environments. GitHub manages the hosted
-infrastructure and base runner images; your team owns the software added to the
-custom image and its rebuild cadence.
+<table>
+<tr>
+<td align="center" width="33%">
+<sub>SETUP TIME REMOVED / RUN</sub>
+<h2>11 min 39 sec</h2>
+</td>
+<td align="center" width="33%">
+<sub>SETUP REDUCTION</sub>
+<h2>96.2%</h2>
+</td>
+<td align="center" width="33%">
+<sub>RUNNER COMPUTE / 1K RUNS*</sub>
+<h2>$130 → $26.67</h2>
+</td>
+</tr>
+</table>
 
-When cloning, installation, restoration, or configuration takes minutes—or
-even hours—the image can start with that work already present. The job performs
-only the freshness checks and delta updates needed for that run.
+> **Keep the convenience of GitHub-hosted runners. Add the speed and
+> consistency of your own pre-warmed environment.**
 
-Sources:
+| GitHub manages | Your team adds | Every job receives |
+|---|---|---|
+| Hosted infrastructure, clean environments, base runner images, and larger-runner scaling | Approved tools, services, repositories, dependencies, and configuration | A fresh, validated, ready-to-work environment |
+
+<sub>
+* Measured by this repository's POC. The 1,000-run estimate uses private
+standard-Windows rates, one billed custom-image minute, and $4.67 monthly image
+maintenance compute; storage excluded. Results vary by workload.
+</sub>
+
+Official sources:
 [GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) ·
 [Larger runners](https://docs.github.com/en/enterprise-cloud@latest/actions/concepts/runners/larger-runners) ·
 [Custom images](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
@@ -265,23 +283,6 @@ The benchmark uses
 [`llvm/llvm-project`](https://github.com/llvm/llvm-project) with full history
 and **186,978 tracked files**. Both paths resolve the same commit and execute
 the same Git-to-SQL proof workload.
-
-<table>
-<tr>
-<td align="center" width="33%">
-<sub>TIME TO READY</sub>
-<h2>12:06 → 0:28</h2>
-</td>
-<td align="center" width="33%">
-<sub>SETUP REMOVED</sub>
-<h2>96.2%</h2>
-</td>
-<td align="center" width="33%">
-<sub>FASTER</sub>
-<h2>26.1×</h2>
-</td>
-</tr>
-</table>
 
 | Measured setup | Standard `windows-latest` | Custom image |
 |---|---:|---:|
