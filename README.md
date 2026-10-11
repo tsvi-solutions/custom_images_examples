@@ -313,6 +313,14 @@ flowchart LR
 | [Daily canary](.github/workflows/validate-custom-image.yml) | Prove image age, software readiness, and real workload behavior |
 | [PowerShell scripts](scripts) | Reuse the timeout, validation, sanitization, and proof patterns |
 
+> [!NOTE]
+> **More community examples:** the
+> [`km-allthethings/build-custom-images`](https://github.com/km-allthethings/build-custom-images)
+> repository includes Ubuntu and Windows image workflows, proxy configuration,
+> pre/post-job hooks, and container-hook examples. It is a community resource,
+> not official GitHub documentation; review its security and operational
+> choices against your own requirements.
+
 The current template defaults to `llvm/llvm-project`. Set
 `BENCHMARK_REPOSITORY` to your own `owner/repository`, then rebuild the image.
 
