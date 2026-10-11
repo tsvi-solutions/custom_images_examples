@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="450" viewBox="0 0 1200 450" role="img" aria-labelledby="title desc">
+  <title id="title">A continuously rebuilt and validated custom-image lifecycle</title>
+  <desc id="desc">A GitHub-owned base feeds a weekly clean build, which publishes a new image version. Consumers follow Latest. A readiness canary validates the image every day, with the previous image retained for rollback.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1117"/>
+      <stop offset="1" stop-color="#102a23"/>
+    </linearGradient>
+    <linearGradient id="pipeline" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8b949e"/>
+      <stop offset="0.42" stop-color="#58a6ff"/>
+      <stop offset="1" stop-color="#3fb950"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="9" stdDeviation="13" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M30 0H0V30" fill="none" stroke="#30363d" stroke-width="1" opacity="0.2"/>
+    </pattern>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#58a6ff"/>
+    </marker>
+    <marker id="greenArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#3fb950"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="450" rx="28" fill="url(#background)"/>
+  <rect width="1200" height="450" rx="28" fill="url(#grid)"/>
+  <circle cx="1080" cy="50" r="180" fill="#3fb950" opacity="0.07"/>
+  <text x="600" y="48" fill="#f0f6fc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="27" font-weight="800" text-anchor="middle">FRESH BY DESIGN</text>
+  <text x="600" y="76" fill="#8b949e" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" text-anchor="middle" letter-spacing="1.4">REBUILD · VERSION · CONSUME · VERIFY</text>
+
+  <rect x="118" y="194" width="964" height="8" rx="4" fill="url(#pipeline)" filter="url(#glow)"/>
+
+  <g filter="url(#shadow)" font-family="Inter,Segoe UI,Arial,sans-serif">
+    <rect x="46" y="130" width="205" height="136" rx="22" fill="#21262d" stroke="#6e7681" stroke-width="2"/>
+    <circle cx="148.5" cy="168" r="25" fill="#30363d" stroke="#8b949e"/>
+    <path d="M136 168H161M148.5 155.5V180.5" stroke="#c9d1d9" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="148.5" y="217" fill="#f0f6fc" font-size="16" font-weight="800" text-anchor="middle">GITHUB BASE</text>
+    <text x="148.5" y="239" fill="#8b949e" font-size="12" text-anchor="middle">Patched + maintained</text>
+
+    <rect x="274" y="112" width="205" height="172" rx="22" fill="#111f35" stroke="#1f6feb" stroke-width="2"/>
+    <rect x="310" y="129" width="133" height="24" rx="12" fill="#1f6feb" opacity="0.22"/>
+    <text x="376.5" y="145" fill="#79c0ff" font-size="10" font-weight="800" text-anchor="middle" letter-spacing="1">EVERY WEEK</text>
+    <circle cx="376.5" cy="180" r="25" fill="#1f6feb" opacity="0.24"/>
+    <path d="M365 185A13 13 0 1 0 365 172M365 172V164M365 172H373" fill="none" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="376.5" y="226" fill="#f0f6fc" font-size="16" font-weight="800" text-anchor="middle">CLEAN BUILD</text>
+    <text x="376.5" y="248" fill="#8b949e" font-size="12" text-anchor="middle">Install + validate</text>
+
+    <rect x="502" y="112" width="205" height="172" rx="22" fill="#221a36" stroke="#8250df" stroke-width="2"/>
+    <rect x="538" y="129" width="133" height="24" rx="12" fill="#8250df" opacity="0.22"/>
+    <text x="604.5" y="145" fill="#c8b6ff" font-size="10" font-weight="800" text-anchor="middle" letter-spacing="1">VERSIONED</text>
+    <circle cx="604.5" cy="180" r="25" fill="#8250df" opacity="0.24"/>
+    <path d="M590 173L604.5 165L619 173V190L604.5 198L590 190Z" fill="none" stroke="#a371f7" stroke-width="2.5"/>
+    <path d="M590 173L604.5 181L619 173M604.5 181V198" fill="none" stroke="#a371f7" stroke-width="2.5"/>
+    <text x="604.5" y="226" fill="#f0f6fc" font-size="16" font-weight="800" text-anchor="middle">NEW IMAGE</text>
+    <text x="604.5" y="248" fill="#8b949e" font-size="12" text-anchor="middle">Publish next 1.*</text>
+
+    <rect x="730" y="112" width="205" height="172" rx="22" fill="#15261a" stroke="#238636" stroke-width="2"/>
+    <rect x="766" y="129" width="133" height="24" rx="12" fill="#238636" opacity="0.22"/>
+    <text x="832.5" y="145" fill="#56d364" font-size="10" font-weight="800" text-anchor="middle" letter-spacing="1">FOLLOWS LATEST</text>
+    <circle cx="832.5" cy="180" r="25" fill="#238636" opacity="0.24"/>
+    <path d="M817 180H848M838 170L848 180L838 190" fill="none" stroke="#56d364" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="832.5" y="226" fill="#f0f6fc" font-size="16" font-weight="800" text-anchor="middle">CONSUMER</text>
+    <text x="832.5" y="248" fill="#8b949e" font-size="12" text-anchor="middle">Fresh hosted runner</text>
+
+    <rect x="958" y="112" width="205" height="172" rx="22" fill="#132b24" stroke="#2ea043" stroke-width="2"/>
+    <rect x="994" y="129" width="133" height="24" rx="12" fill="#238636" opacity="0.22"/>
+    <text x="1060.5" y="145" fill="#56d364" font-size="10" font-weight="800" text-anchor="middle" letter-spacing="1">EVERY DAY</text>
+    <circle cx="1060.5" cy="180" r="25" fill="#238636" opacity="0.24" filter="url(#glow)"/>
+    <path d="M1049 180L1057 188L1073 170" fill="none" stroke="#56d364" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="1060.5" y="226" fill="#f0f6fc" font-size="16" font-weight="800" text-anchor="middle">READINESS CANARY</text>
+    <text x="1060.5" y="248" fill="#8b949e" font-size="12" text-anchor="middle">Fresh + correct + ready</text>
+  </g>
+
+  <path d="M251 198H270M479 198H498M707 198H726M935 198H954" stroke="#58a6ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M1060 284C1060 347 860 347 832 288" fill="none" stroke="#3fb950" stroke-width="3" stroke-dasharray="8 7" marker-end="url(#greenArrow)"/>
+  <rect x="875" y="323" width="149" height="27" rx="13.5" fill="#132b24" stroke="#238636"/>
+  <text x="949.5" y="341" fill="#56d364" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10" font-weight="800" text-anchor="middle" letter-spacing="1">CONTINUOUS PROOF</text>
+
+  <path d="M604 284V330H522" fill="none" stroke="#a371f7" stroke-width="2" stroke-dasharray="6 6"/>
+  <rect x="343" y="315" width="179" height="58" rx="17" fill="#1d1730" stroke="#8250df"/>
+  <text x="432.5" y="339" fill="#c8b6ff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="0.8">KEEP PREVIOUS VERSION</text>
+  <text x="432.5" y="359" fill="#8b949e" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" text-anchor="middle">Known-good rollback</text>
+
+  <rect x="241" y="397" width="718" height="30" rx="15" fill="#161b22" stroke="#3fb950" opacity="0.95"/>
+  <text x="600" y="417" fill="#f0f6fc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" text-anchor="middle" letter-spacing="0.8">GITHUB MAINTAINS THE BASE · YOUR AUTOMATION MAINTAINS THE WARM LAYER</text>
+</svg>

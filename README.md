@@ -19,58 +19,27 @@ image—without taking on a fleet of self-hosted runners.
 
 ### Move setup out of every run
 
-```mermaid
-flowchart LR
-    Before["WITHOUT IMAGE<br/>12 min 06 sec<br/>Clone + install"]
-    Build["BUILD ONCE<br/>GitHub base + your layer"]
-    After["WITH IMAGE<br/>28 sec<br/>Validate + fetch delta"]
-    Value["BUSINESS IMPACT<br/>26.1× faster<br/>$130 → $26.67 / 1K runs"]
-
-    Before -->|"prepare once"| Build
-    Build -->|"start every run ready"| After
-    After --> Value
-
-    classDef baseline fill:#ffebe9,color:#82071e,stroke:#cf222e,stroke-width:3px
-    classDef warmLayer fill:#fbefff,color:#5a1e75,stroke:#8250df,stroke-width:3px
-    classDef readyState fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:3px
-    classDef outcome fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:3px
-    class Before baseline
-    class Build warmLayer
-    class After readyState
-    class Value outcome
-```
+[![Custom images reduce setup time and runner spend while accelerating feedback](assets/custom-image-value.svg)](assets/custom-image-value.svg)
 
 <table>
 <tr>
 <td align="center" width="33%">
-<sub>SETUP TIME REMOVED / RUN</sub>
-<h2>11 min 39 sec</h2>
+<h3>↯ FASTER START</h3>
+<sub>REMOVE REPEATED SETUP</sub>
 </td>
 <td align="center" width="33%">
-<sub>FASTER TO READY</sub>
-<h2>26.1×</h2>
+<h3>◇ LOWER COMPUTE</h3>
+<sub>STOP PAYING TO REBUILD THE SAME ENVIRONMENT</sub>
 </td>
 <td align="center" width="33%">
-<sub>MONTHLY COMPUTE / 1K RUNS*</sub>
-<h2>$130 → $26.67</h2>
+<h3>✓ CONSISTENT</h3>
+<sub>START FROM A VALIDATED FOUNDATION</sub>
 </td>
 </tr>
 </table>
 
-> ### 96.2% less setup—without operating a self-hosted runner fleet.
->
-> Keep the convenience of GitHub-hosted runners. Add the speed and consistency
-> of your own pre-warmed environment.
-
-| ◇ GitHub manages | ◆ Your team adds | ✓ Every job receives |
-|---|---|---|
-| Hosted infrastructure, clean environments, base runner images, and larger-runner scaling | Approved tools, services, repositories, dependencies, and configuration | A fresh, validated, ready-to-work environment |
-
-<sub>
-* Measured by this repository's POC. The 1,000-run estimate uses private
-standard-Windows rates, one billed custom-image minute, and $4.67 monthly image
-maintenance compute; storage excluded. Results vary by workload.
-</sub>
+> **GitHub manages the runner foundation. You add the warm layer. Every job
+> starts validated and ready.**
 
 Official sources:
 [GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) ·
@@ -78,6 +47,8 @@ Official sources:
 [Custom images](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
 
 ## ◆ Where pre-warming creates value
+
+[![Workloads that benefit from pre-warmed custom images](assets/prewarming-use-cases.svg)](assets/prewarming-use-cases.svg)
 
 | Workload | Put in the image | Remove from every job |
 |---|---|---|
@@ -169,21 +140,7 @@ Official GitHub guidance:
 > **Custom images optimize where work starts. A monorepo build system
 > optimizes what work runs. The strongest design uses both.**
 
-```mermaid
-flowchart LR
-    Image["CUSTOM IMAGE<br/>Environment ready"]
-    Graph["BUILD SYSTEM<br/>Affected targets only"]
-    Actions["GITHUB ACTIONS<br/>Orchestrate · Prove · Report"]
-    Image --> Actions
-    Graph --> Actions
-
-    classDef image fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:3px
-    classDef buildGraph fill:#fff8c5,color:#633c01,stroke:#bf8700,stroke-width:3px
-    classDef actions fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:3px
-    class Image image
-    class Graph buildGraph
-    class Actions actions
-```
+[![Custom images and graph-aware build systems combine with GitHub Actions](assets/optimized-ci-stack.svg)](assets/optimized-ci-stack.svg)
 
 <details>
 <summary><strong>Competitive landscape for large monorepos</strong></summary>
@@ -335,17 +292,7 @@ and publish your own measured result.
 
 ## ⌘ Use this repository as a template
 
-```mermaid
-flowchart LR
-    Configure["1 · CONFIGURE<br/>Repository + runners"]
-    Build["2 · BUILD<br/>Install + seed + snapshot"]
-    Consume["3 · CONSUME<br/>Select image version Latest"]
-    Prove["4 · PROVE<br/>Before + after + canary"]
-    Configure --> Build --> Consume --> Prove
-
-    classDef step fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:2px
-    class Configure,Build,Consume,Prove step
-```
+[![Configure, build, consume, and prove the custom-image template](assets/template-journey.svg)](assets/template-journey.svg)
 
 | Template component | What to customize |
 |---|---|
@@ -440,20 +387,7 @@ for authentication headers or token markers before snapshotting.
 
 ## ↻ Keep the warm layer current
 
-```mermaid
-flowchart LR
-    Base["GITHUB-OWNED BASE"] --> Build["WEEKLY CLEAN BUILD"]
-    Build --> Latest["NEW IMAGE VERSION"]
-    Latest --> Runner["CONSUMER · LATEST"]
-    Runner -. daily .-> Canary["READINESS CANARY"]
-
-    classDef base fill:#f6f8fa,color:#24292f,stroke:#8c959f
-    classDef image fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:2px
-    classDef healthy fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:2px
-    class Base base
-    class Build,Latest image
-    class Runner,Canary healthy
-```
+[![Weekly image rebuild and daily readiness-canary lifecycle](assets/image-lifecycle.svg)](assets/image-lifecycle.svg)
 
 GitHub maintains the base image; your scheduled workflow must rebuild and
 revalidate the custom layer. This template performs a clean weekly rebuild and
