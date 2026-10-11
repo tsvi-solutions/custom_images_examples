@@ -35,7 +35,7 @@ image—without taking on a fleet of self-hosted runners.
 
 <p align="center">
   <a href="assets/custom-image-value.svg">
-    <img src="assets/custom-image-value.svg" width="100%" alt="Custom images reduce setup time and runner spend while accelerating feedback">
+    <img src="assets/custom-image-value.svg" width="100%" alt="Without a custom image, every run repeats repository materialization, SDK and service installation, package restoration, generated files, and workspace configuration; a warm image captures that setup once to reduce time and runner cost and accelerate feedback">
   </a>
 </p>
 
