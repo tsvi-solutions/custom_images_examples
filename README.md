@@ -83,6 +83,43 @@ software into an image.
 > The gain compounds. If a workflow installs three slow components, a custom
 > image can remove all three setup paths—not just optimize one command.
 
+<details>
+<summary><strong>Side note · Custom image, dependency cache, or artifact?</strong></summary>
+
+These features solve different problems and work best as layers:
+
+| Layer | Use it for | Expected behavior |
+|---|---|---|
+| **Custom image** | OS-level tools, SDKs, services, large stable assets, and validated configuration | Every runner starts with the same versioned foundation |
+| **Dependency cache** | Package-manager stores, intermediate outputs, and expensive but regenerable files | A key may hit or miss; the job must still work after a miss |
+| **Artifact** | Binaries, test results, logs, screenshots, and data passed between jobs | Preserve or share outputs produced by a workflow run |
+
+### A practical layered strategy
+
+1. Put **large, stable, slow-to-install** software in the custom image.
+2. Cache **frequently changing, regenerable** dependencies using keys derived
+   from the operating system, tool version, and lockfile.
+3. Use ordered restore keys only when a broader, partially matching cache is
+   safe and useful.
+4. Measure cache download/extraction time; do not cache small data that is
+   faster to regenerate or data already supplied efficiently by the image.
+5. Upload final build outputs and diagnostics as artifacts—not caches.
+
+> [!CAUTION]
+> Treat restored cache contents as untrusted input. Never place secrets or
+> sensitive data in a cache. Fork pull requests and other low-trust triggers
+> have specific cache-access protections, but workflows should remain safe
+> when a cache is missing or contains unexpected files.
+
+Official GitHub guidance:
+
+- [Dependency caching concepts](https://docs.github.com/en/actions/concepts/workflows-and-actions/dependency-caching)
+- [Dependency caching reference and secure-use guidance](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching)
+- [Workflow artifacts and how they differ from caches](https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts)
+- [Using custom images](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
+
+</details>
+
 ## ◐ Before replacing GitHub Actions
 
 <table>
