@@ -1,20 +1,155 @@
 <div align="center">
 
-# GitHub Actions · Custom Images
+# ◈ Pre-warmed GitHub-hosted runners
 
-### A Windows runner, already prepared.
+### GitHub-managed foundation. Your software. Ready in seconds.
 
-[![Windows](https://img.shields.io/badge/Windows-x64-0078D4?style=for-the-badge&logo=windows11&logoColor=white)](https://github.com/actions/runner-images)
 [![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Custom_Images-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
-[![SQL Server](https://img.shields.io/badge/SQL_Server-2022_Developer-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)](https://learn.microsoft.com/sql/database-engine/install-windows/install-sql-server)
+[![Platforms](https://img.shields.io/badge/Platforms-Linux_·_Windows_·_ARM64-8250DF?style=for-the-badge&logo=github&logoColor=white)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
+[![Verified POC](https://img.shields.io/badge/VERIFIED-26.1×_FASTER-1F883D?style=for-the-badge&logo=github&logoColor=white)](https://github.com/tsvi-solutions/custom_images_examples/actions/runs/38083459558)
 
-**01 / Large monorepo checkout + SQL Server**
+Move repeatable setup out of every workflow run and into a reusable custom
+image—without taking on a fleet of self-hosted runners.
 
 </div>
 
 ---
 
-## ◈ Proven outcome
+## ↯ The custom-image advantage
+
+```mermaid
+flowchart LR
+    Base["GITHUB-HOSTED BASE<br/>Fresh VM · Managed image · Autoscaling"]
+    Warm["YOUR WARM LAYER<br/>Tools · Services · Repositories · Configuration"]
+    Ready["READY-TO-WORK RUNNER<br/>Consistent · Ephemeral · Fast"]
+
+    Base --> Ready
+    Warm --> Ready
+
+    classDef base fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:3px
+    classDef warm fill:#fff8c5,color:#633c01,stroke:#bf8700,stroke-width:3px
+    classDef ready fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:3px
+    class Base base
+    class Warm warm
+    class Ready ready
+```
+
+<table>
+<tr>
+<td align="center" width="25%"><strong>FAST START</strong><br/><sub>Remove repeated setup from the job path</sub></td>
+<td align="center" width="25%"><strong>MANAGED BASE</strong><br/><sub>Build from GitHub-owned runner images</sub></td>
+<td align="center" width="25%"><strong>CONSISTENT</strong><br/><sub>Start jobs from a validated environment</sub></td>
+<td align="center" width="25%"><strong>ELASTIC</strong><br/><sub>Keep larger-runner autoscaling and controls</sub></td>
+</tr>
+</table>
+
+GitHub-hosted jobs start in clean environments. GitHub manages the hosted
+infrastructure and base runner images; your team owns the software added to the
+custom image and its rebuild cadence.
+
+When cloning, installation, restoration, or configuration takes minutes—or
+even hours—the image can start with that work already present. The job performs
+only the freshness checks and delta updates needed for that run.
+
+Sources:
+[GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) ·
+[Larger runners](https://docs.github.com/en/enterprise-cloud@latest/actions/concepts/runners/larger-runners) ·
+[Custom images](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
+
+## ◆ Where pre-warming creates value
+
+| Workload | Put in the image | Remove from every job |
+|---|---|---|
+| **Enterprise toolchains** | Approved compilers, build workloads, internal CA certificates | Long bootstrap scripts and configuration drift |
+| **Mobile builds** | Android SDKs, emulator images, device tooling | Large SDK and system-image downloads |
+| **Browser testing** | Browser binaries, drivers, stable test assets | Repeated Playwright or browser installation |
+| **Databases and services** | SQL engines, clients, local service configuration | Installer downloads, service setup, restarts |
+| **Large repositories** | Git mirror, full history, materialized workspace | Multi-GB clone and file materialization |
+| **Data and ML builds** | Runtimes, native libraries, approved model tooling | Heavy environment and native dependency setup |
+| **Dependency-heavy builds** | Restored package stores and immutable build dependencies | Re-downloading stable packages on every run |
+| **Embedded and IoT** | Cross-compilers, board SDKs, emulators, firmware tools | Rebuilding specialized device environments |
+| **Game and graphics builds** | Engine SDKs, content tools, platform workloads | Very large editor, SDK, and asset-tool installation |
+| **Security and compliance** | Approved scanners, SBOM tools, policy bundles | Installing and aligning security tooling in every job |
+| **Infrastructure delivery** | Pinned cloud CLIs, Terraform providers, Helm plugins | Re-fetching approved deployment toolchains |
+| **Documentation and localization** | TeX distributions, fonts, converters, language packs | Large document-tool and font installation |
+| **Media processing** | Approved codecs, image/video tools, stable test media | Native package setup and repeated asset downloads |
+| **Legacy modernization** | Compatibility SDKs, older runtimes, MSBuild workloads | Reconstructing fragile legacy build environments |
+
+The best candidates are **large, stable, deterministic, and safe to capture**.
+Do not bake secrets, production data, short-lived credentials, or unlicensed
+software into an image.
+
+> [!TIP]
+> The gain compounds. If a workflow installs three slow components, a custom
+> image can remove all three setup paths—not just optimize one command.
+
+## ◇ Model the value with your own workload
+
+```text
+monthly runner cost =
+  workflow runs
+  × billed minutes per run
+  × runner rate
+  + image-build and validation compute
+  + retained image storage
+```
+
+Measure the current job first, build the image, then compare equivalent
+outcomes. A strong business case uses your repository, software stack, workflow
+volume, retention policy, and GitHub plan—not a generic labor-cost multiplier.
+
+### Example scale from this repository's POC
+
+| Runs / month | Standard Windows path | Custom-image path* |
+|---:|---:|---:|
+| 1,000 | **$130.00** | **$26.67** |
+| 10,000 | **$1,300.00** | **$224.67** |
+| 50,000 | **$6,500.00** | **$1,104.67** |
+
+<sub>
+* Uses this POC's measured 13 billed minutes versus one billed minute, plus
+$4.67/month for weekly image-build and daily-canary compute. Assumes private
+standard Windows minutes are billable after plan allowances. Storage varies by
+image size, retention, and plan allowance.
+</sub>
+
+<details>
+<summary><strong>How the example costs are calculated</strong></summary>
+
+This is a runner-compute example, not a forecast of a customer's final invoice.
+
+| 1,000-run example | Calculation | Monthly cost |
+|---|---|---:|
+| Standard Windows path | 1,000 × 13 billed min × $0.010 | **$130.00** |
+| Custom-image path | 1,000 × 1 billed min × $0.022 + $4.67 | **$26.67** |
+
+The rates come from
+[GitHub's Actions runner pricing](https://docs.github.com/en/enterprise-cloud@latest/billing/reference/actions-runner-pricing).
+GitHub rounds each job up to a whole billed minute.
+
+The fixed **$4.67/month** is the observed compute for weekly image builds and
+the daily canary. It is spread across more runs as workflow volume grows.
+Included private minutes can reduce the standard-runner cost.
+
+Custom-image storage is separate. Apply the retained image size, retention
+window, and allowance for your plan in the
+[GitHub pricing calculator](https://github.com/pricing/calculator?feature=actions)
+or billing dashboard. See
+[custom-image storage billing](https://docs.github.com/en/enterprise-cloud@latest/billing/concepts/product-billing/github-actions#custom-image-storage).
+
+</details>
+
+## ✓ One measured implementation
+
+This repository includes one concrete POC—not the limit of what the template
+can support:
+
+> **Pre-warm a Windows image with SQL Server and a large monorepo workspace.**
+
+The benchmark uses
+[`llvm/llvm-project`](https://github.com/llvm/llvm-project) with full history
+and **186,978 tracked files**. Both paths resolve the same commit and execute
+the same Git-to-SQL proof workload.
 
 <table>
 <tr>
@@ -27,55 +162,104 @@
 <h2>96.2%</h2>
 </td>
 <td align="center" width="33%">
-<sub>FASTER FEEDBACK</sub>
+<sub>FASTER</sub>
 <h2>26.1×</h2>
 </td>
 </tr>
 </table>
 
-| | Standard runner | Custom image |
+| Measured setup | Standard `windows-latest` | Custom image |
 |---|---:|---:|
-| Git checkout | 8 min 42 sec | **27 sec** |
+| Full-history checkout | 8 min 42 sec | **27 sec** |
 | SQL Server ready | 3 min 24 sec | **0.27 sec** |
 | **Ready for work** | **12 min 06 sec** | **28 sec** |
 
 <div align="center">
 
-[![Verified benchmark](https://img.shields.io/badge/VERIFIED-RUN_38083459558-1F883D?style=for-the-badge&logo=github&logoColor=white)](https://github.com/tsvi-solutions/custom_images_examples/actions/runs/38083459558)
+[![View benchmark](https://img.shields.io/badge/VIEW-CANONICAL_RUN_38083459558-1F883D?style=for-the-badge&logo=github&logoColor=white)](https://github.com/tsvi-solutions/custom_images_examples/actions/runs/38083459558)
 
 </div>
 
-<p align="center">
-<sub>LLVM · 186,978 files · full history · image 1.1.0</sub>
-</p>
+This result demonstrates the pattern; it is not a promise that every workload
+will become 26.1× faster. Add your software, retain the same before/after proof,
+and publish your own measured result.
 
-## ↯ Build once. Reuse everywhere.
+## ⌘ Use this repository as a template
 
 ```mermaid
 flowchart LR
-    Prepare["PREPARE ONCE<br/>Git · Files · SQL Server"]
-    Image["CUSTOM IMAGE"]
-    Update["EACH JOB<br/>Fetch latest delta"]
-    Ready["READY<br/>28 seconds"]
+    Configure["1 · CONFIGURE<br/>Repository + runners"]
+    Build["2 · BUILD<br/>Install + seed + snapshot"]
+    Consume["3 · CONSUME<br/>Select image version Latest"]
+    Prove["4 · PROVE<br/>Before + after + canary"]
+    Configure --> Build --> Consume --> Prove
 
-    Prepare --> Image --> Update --> Ready
-
-    classDef source fill:#f6f8fa,color:#24292f,stroke:#8c959f,stroke-width:2px
-    classDef image fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:3px
-    classDef action fill:#fff8c5,color:#633c01,stroke:#bf8700,stroke-width:2px
-    classDef ready fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:3px
-    class Prepare source
-    class Image image
-    class Update action
-    class Ready ready
+    classDef step fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:2px
+    class Configure,Build,Consume,Prove step
 ```
 
-The image carries the stable setup. The job still authenticates normally and
-uses `actions/checkout`; it simply downloads the changes made since the image
-was built.
+| Template component | What to customize |
+|---|---|
+| [Image build](.github/workflows/build-custom-image.yml) | Add your installers, SDKs, services, and immutable assets |
+| [Before/after benchmark](.github/workflows/compare-before-after.yml) | Replace or extend the measured setup phases |
+| [Daily canary](.github/workflows/validate-custom-image.yml) | Prove image age, software readiness, and real workload behavior |
+| [PowerShell scripts](scripts) | Reuse the timeout, validation, sanitization, and proof patterns |
+
+The current template defaults to `llvm/llvm-project`. Set
+`BENCHMARK_REPOSITORY` to your own `owner/repository`, then rebuild the image.
 
 <details>
-<summary><strong>Why the warm checkout is safe and fast</strong></summary>
+<summary><strong>Exact runner setup</strong></summary>
+
+Custom images require GitHub-hosted larger runners created at organization or
+enterprise scope.
+
+### Image-generation runner
+
+Create a Windows x64 GitHub-hosted larger runner:
+
+| Setting | Value |
+|---|---|
+| Base image | GitHub-owned `windows-latest` |
+| Generate custom images | Enabled |
+| Name | `windows-image-generation` |
+
+Run **Build Windows monorepo image**. It publishes:
+
+```text
+windows-monorepo-sqlserver
+```
+
+GitHub may continue provisioning the image after the workflow completes. See
+[Generating a custom image](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#generating-a-custom-image).
+
+### Consumer runner
+
+Create a second Windows x64 larger runner:
+
+| Setting | Value |
+|---|---|
+| Image | Custom → `windows-monorepo-sqlserver` |
+| Version | **Latest** |
+| Size | 4 cores, 16 GB RAM, 150 GB SSD |
+| Name | `windows-monorepo-sqlserver-runner` |
+
+Selecting
+[**Latest**](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#installing-custom-images)
+adopts newly published versions. Pin a version only for intentional rollback.
+
+| Optional setting | Purpose |
+|---|---|
+| `IMAGE_GENERATION_RUNNER` | Override the image-generation runner name |
+| `CUSTOM_IMAGE_RUNNER` | Override the consumer runner name |
+| `BENCHMARK_REPOSITORY` | Replace `llvm/llvm-project` |
+| `BENCHMARK_TOKEN` | Read-only token for a private benchmark repository |
+| `CUSTOM_IMAGE_MAX_AGE_DAYS` | Override the default 10-day freshness limit |
+
+</details>
+
+<details>
+<summary><strong>How the warm Git checkout works</strong></summary>
 
 The image contains:
 
@@ -85,278 +269,82 @@ C:\ProgramData\GitHubCustomImage\worktree
 ```
 
 At runtime, `Initialize-WarmCheckout.ps1` moves the prepared worktree into
-`GITHUB_WORKSPACE` on the same disk. It normalizes the remote URL and detaches
-`HEAD` with a metadata-only ref update so `actions/checkout` does not rescan
-every file before fetching.
+`GITHUB_WORKSPACE` on the same disk. `actions/checkout` still authenticates,
+fetches current refs, and force-checks the pinned target SHA.
 
-The custom path uses `clean: false` because:
+The custom path uses `clean: false` because the image build already proves the
+worktree is clean and each hosted runner VM is fresh. A metadata-only detached
+`HEAD` avoids rescanning every tracked file before checkout.
 
-1. the image build already proves the worktree is clean;
-2. every GitHub-hosted runner starts on a fresh ephemeral VM; and
-3. `actions/checkout` still force-checks the pinned target SHA.
-
-The build uses `persist-credentials: false` and scans both cached Git
-repositories for authentication headers or token markers before snapshotting.
+The build uses `persist-credentials: false` and scans both cached repositories
+for authentication headers or token markers before snapshotting.
 
 </details>
 
-## ▶ Run the demo
-
-| `01` GENERATE | `02` BUILD | `03` ATTACH | `04` COMPARE |
-|---|---|---|---|
-| Create `windows-image-generation` | Run **Build Windows monorepo image** | Create consumer runner using **Latest** | Run **Compare before and after** |
-
-> [!IMPORTANT]
-> Create both runners from **organization settings**. Custom images require
-> GitHub-hosted larger runners and cannot run on the standard
-> `windows-latest` label.
-
-<details>
-<summary><strong>Exact runner and repository setup</strong></summary>
-
-### 1. Image-generation runner
-
-Open:
-
-```text
-https://github.com/organizations/YOUR-ORGANIZATION/settings/actions/runners
-```
-
-Choose **New runner → New GitHub-hosted runner**:
-
-| Setting | Value |
-|---|---|
-| Platform | Windows x64 |
-| Base image | GitHub-owned `windows-latest` |
-| Generate custom images | Enabled |
-| Name | `windows-image-generation` |
-
-If you use another name, set the `IMAGE_GENERATION_RUNNER` Actions variable.
-Enable custom images in the
-[organization or enterprise Actions policy](https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-github-actions-in-your-enterprise#custom-images).
-
-Run **Build Windows monorepo image**. The workflow publishes:
-
-```text
-windows-monorepo-sqlserver
-```
-
-GitHub may continue provisioning the image after the workflow finishes. See
-[Generating a custom image](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#generating-a-custom-image).
-
-### 2. Consumer runner
-
-Create a second GitHub-hosted larger runner:
-
-| Setting | Value |
-|---|---|
-| Platform | Windows x64 |
-| Image | Custom → `windows-monorepo-sqlserver` |
-| Version | **Latest** |
-| Size | 4 cores, 16 GB RAM, 150 GB SSD |
-| Maximum concurrency | 1 |
-| Name | `windows-monorepo-sqlserver-runner` |
-
-If you use another name, set the `CUSTOM_IMAGE_RUNNER` Actions variable.
-Selecting
-[**Latest**](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#installing-custom-images)
-lets the runner adopt newly published versions. Pin a version only for a
-deliberate rollback.
-
-### 3. Optional benchmark settings
-
-| Setting | Required | Purpose |
-|---|:---:|---|
-| `BENCHMARK_REPOSITORY` variable | No | Defaults to `llvm/llvm-project` |
-| `BENCHMARK_TOKEN` secret | Private repositories only | Read-only Contents token |
-| `CUSTOM_IMAGE_MAX_AGE_DAYS` variable | No | Defaults to 10 days |
-
-Changing `BENCHMARK_REPOSITORY` requires rebuilding the image.
-
-</details>
-
-## ◇ Economics
-
-### Scale across a month · private repository example
-
-| Runs / month | Without custom image | With custom image* |
-|---:|---:|---:|
-| 1,000 | **$130.00** | **$26.67** |
-| 10,000 | **$1,300.00** | **$224.67** |
-| 50,000 | **$6,500.00** | **$1,104.67** |
-
-> At **50,000 runs per month**: **$6,500 without** the custom image versus
-> **$1,104.67 with** it, before storage.
-
-<sub>
-* Includes $4.67/month for image-build and canary compute. Assumes private
-standard Windows minutes are billable after plan allowances. Storage varies
-with image retention and the allowance included in your plan.
-</sub>
-
-<details>
-<summary><strong>How this estimate is calculated</strong></summary>
-
-This is a runner-compute estimate, not a forecast of the final GitHub invoice.
-
-| 1,000-run example | Calculation | Monthly cost |
-|---|---|---:|
-| Without custom image | 1,000 × 13 billed min × $0.010 | **$130.00** |
-| With custom image | 1,000 × 1 billed min × $0.022 + $4.67 maintenance | **$26.67** |
-
-The fixed **$4.67/month** is the observed compute for weekly image builds and
-the daily canary. At higher workflow volume, that fixed amount is spread across
-more runs.
-
-The rates come from
-[GitHub's Actions runner pricing](https://docs.github.com/en/enterprise-cloud@latest/billing/reference/actions-runner-pricing).
-GitHub rounds each job up to a whole billed minute.
-
-Your actual bill can be lower when plan allowances cover standard private
-minutes. Custom-image storage is separate and depends on retained image size,
-retention time, and the storage included with your plan. Check the
-[GitHub pricing calculator](https://github.com/pricing/calculator?feature=actions)
-or billing dashboard for your organization. See
-[custom-image storage billing](https://docs.github.com/en/enterprise-cloud@latest/billing/concepts/product-billing/github-actions#custom-image-storage).
-
-</details>
-
-### Where the pattern can grow
+## ↻ Keep the warm layer current
 
 ```mermaid
 flowchart LR
-    Image["CUSTOM IMAGE"]
-    Image --> Repos["Large repositories<br/>and dependency caches"]
-    Image --> SDKs["Large SDKs<br/>and compiler workloads"]
-    Image --> Services["Databases<br/>and local services"]
-    Image --> Tests["Browser binaries<br/>and test assets"]
-
-    classDef image fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:3px
-    classDef usecase fill:#f6f8fa,color:#24292f,stroke:#8c959f,stroke-width:2px
-    class Image image
-    class Repos,SDKs,Services,Tests usecase
-```
-
-Good candidates are large, stable, deterministic installations that otherwise
-repeat in every job—for example Android system images, Playwright browsers,
-specialized compiler workloads, database engines, and restored dependency
-caches.
-
-> [!NOTE]
-> These are **future examples**, not extra time added to the 96.2% result.
-> Each use case should be benchmarked independently before claiming savings.
-
-## ↻ Automatic freshness
-
-```mermaid
-flowchart LR
-    Base["windows-latest"] --> Build["WEEKLY REBUILD"]
-    Build --> Version["NEW VERSION"]
-    Version --> Runner["CONSUMER · LATEST"]
-    Runner -. daily .-> Canary["CANARY"]
+    Base["GITHUB-OWNED BASE"] --> Build["WEEKLY CLEAN BUILD"]
+    Build --> Latest["NEW IMAGE VERSION"]
+    Latest --> Runner["CONSUMER · LATEST"]
+    Runner -. daily .-> Canary["READINESS CANARY"]
 
     classDef base fill:#f6f8fa,color:#24292f,stroke:#8c959f
     classDef image fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:2px
     classDef healthy fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:2px
     class Base base
-    class Build,Version image
+    class Build,Latest image
     class Runner,Canary healthy
 ```
 
-- **Sunday 03:17 UTC:** rebuild from GitHub's current `windows-latest`.
-- **Daily 09:47 UTC:** verify image age, warm checkout, SQL Server, and the
-  combined Git-to-SQL workload.
-- **Retention:** keep the current version and one known-good rollback version.
+GitHub maintains the base image; your scheduled workflow must rebuild and
+revalidate the custom layer. This template performs a clean weekly rebuild and
+a daily consumer canary.
 
 <details>
-<summary><strong>Lifecycle, rollback, and retention details</strong></summary>
+<summary><strong>Promotion, rollback, and retention</strong></summary>
 
-A clean weekly rebuild refreshes Windows, SQL Server media, Git history, and
-the prepared worktree. Building indefinitely from older custom images is
-avoided because
-[derived images inherit the expiration of their base image](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#expiration-for-images-built-from-custom-images).
+- The build publishes automatically incremented `1.*` versions.
+- The consumer runner follows **Latest**.
+- For rollback, pin the previous known-good version and run the canary.
+- Return to **Latest** after remediation.
+- Keep at least one compatible rollback version.
 
-Every successful `snapshot` creates a version. The workflow uses
-`version: "1.*"` and the consumer follows **Latest**.
-
-For rollback:
-
-1. Edit `windows-monorepo-sqlserver-runner`.
-2. Change **Latest** to the previous known-good version.
-3. Run the canary.
-4. Return to **Latest** after the issue is fixed.
-
-The build workflow intentionally does not delete the previous version because
-image provisioning is asynchronous and the new version has not yet passed the
-consumer canary. A **14-day maximum version age** is a practical starting point
-for weekly builds. Configure a
+The build intentionally does not delete the previous image immediately:
+provisioning is asynchronous and the new version must first pass the consumer
+canary. A 14-day retention window is a practical starting point for weekly
+builds. Configure a
 [custom-image retention policy](https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-github-actions-in-your-enterprise#custom-images-retention-policies).
 
 </details>
 
-## ⌘ Explore the implementation
-
-| Start here | Purpose |
-|---|---|
-| [Build image workflow](.github/workflows/build-custom-image.yml) | Install, seed, validate, snapshot |
-| [Comparison workflow](.github/workflows/compare-before-after.yml) | Measure cold and custom-image paths |
-| [Daily canary](.github/workflows/validate-custom-image.yml) | Validate freshness and readiness |
-| [PowerShell scripts](scripts) | Install SQL, activate Git, and prove the workload |
-
 <details>
-<summary><strong>Benchmark fairness and proof</strong></summary>
+<summary><strong>Security and benchmark guardrails</strong></summary>
 
-Each comparison is self-contained:
-
-1. Resolve the benchmark repository's latest `HEAD` once.
-2. Start both jobs on fresh GitHub-hosted VMs.
-3. Check out the same pinned SHA with full history.
-4. Require the same tracked-file count.
-5. Insert the Git evidence into SQL Server and query it back.
-
-The timer excludes queue and runner-provisioning time. It includes the work the
-image removes: benchmark checkout and SQL Server readiness.
-
-No previous workflow run warms the next run. The prepared worktree is inside
-the custom image.
-
-Enable the comparison workflow's optional telemetry input to collect CPU,
-memory, disk, network, and process evidence with the
-[Runner Telemetry Action](https://github.com/marketplace/actions/runner-telemetry-action).
-Telemetry explains resource behavior; the workflow's explicit timers and
-Git-to-SQL proof remain the source of the before/after result.
-
-</details>
-
-<details>
-<summary><strong>Security guardrails</strong></summary>
-
-- Never bake secrets, access tokens, production data, or long-lived
-  credentials into an image.
+- Never capture secrets, production data, long-lived credentials, or
+  unlicensed software.
 - Use a dedicated runner group for image generation.
-- Keep runtime permissions read-only where possible.
-- Use `persist-credentials: false` for repositories captured in the image.
-- Scan cached Git configuration before snapshotting.
-- Treat SQL Server Developer as development and CI software.
-- Create mutable test databases at job runtime, not in the image.
+- Keep workflow permissions read-only where possible.
+- Validate software and credential hygiene before snapshotting.
+- Start both benchmark paths on fresh VMs.
+- Resolve one commit, require equal file counts, and execute the same proof.
+- Treat setup time as workflow time—not automatically as labor savings.
 
 See GitHub's
-[security best practices for custom images](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#security-best-practices-for-custom-images)
-and
-[`GITHUB_TOKEN` guidance](https://docs.github.com/en/enterprise-cloud@latest/actions/security-for-github-actions/security-guides/automatic-token-authentication).
+[custom-image security guidance](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images#security-best-practices-for-custom-images).
 
 </details>
 
 <details>
 <summary><strong>Official documentation</strong></summary>
 
-- [Use custom images](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
-- [GitHub-hosted larger runners](https://docs.github.com/en/enterprise-cloud@latest/actions/concepts/runners/larger-runners)
-- [Actions runner pricing](https://docs.github.com/en/enterprise-cloud@latest/billing/reference/actions-runner-pricing)
+- [Using custom images](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
+- [GitHub-hosted runners reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
+- [Larger runners](https://docs.github.com/en/enterprise-cloud@latest/actions/concepts/runners/larger-runners)
+- [Runner pricing](https://docs.github.com/en/enterprise-cloud@latest/billing/reference/actions-runner-pricing)
 - [Custom-image storage](https://docs.github.com/en/enterprise-cloud@latest/billing/concepts/product-billing/github-actions#custom-image-storage)
 - [Custom-image retention policies](https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-github-actions-in-your-enterprise#custom-images-retention-policies)
-- [Scheduled workflow events](https://docs.github.com/en/enterprise-cloud@latest/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
-- [SQL Server unattended installation](https://learn.microsoft.com/sql/database-engine/install-windows/install-sql-server-from-the-command-prompt)
 
 </details>
 
@@ -364,6 +352,6 @@ and
 
 <div align="center">
 
-### ◈ Build once · Validate once · Start ready
+### ◈ Build the environment once · Start every job ready
 
 </div>
