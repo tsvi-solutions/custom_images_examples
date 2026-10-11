@@ -21,20 +21,22 @@ image—without taking on a fleet of self-hosted runners.
 
 <table>
 <tr>
-<td align="center" width="35%">
-<sub>EVERY RUN STARTS COLD</sub>
+<th align="center" width="35%">○ WITHOUT CUSTOM IMAGE</th>
+<th align="center" width="30%">◆ PREPARE ONCE</th>
+<th align="center" width="35%">✓ WITH CUSTOM IMAGE</th>
+</tr>
+<tr>
+<td align="center">
 <h2>12 min 06 sec</h2>
-<strong>Clone everything · Install software</strong>
+<sub>CLONE EVERYTHING · INSTALL SOFTWARE</sub>
 </td>
-<td align="center" width="30%">
-<sub>PREPARE ONCE</sub>
-<h2>Custom image</h2>
-<strong>GitHub base + your warm layer</strong>
+<td align="center">
+<h2>Build once</h2>
+<sub>GITHUB BASE · YOUR TOOLS · YOUR WORKSPACE</sub>
 </td>
-<td align="center" width="35%">
-<sub>EVERY RUN STARTS READY</sub>
+<td align="center">
 <h2>28 sec</h2>
-<strong>Check freshness · Fetch the delta</strong>
+<sub>VALIDATE FRESHNESS · FETCH ONLY THE DELTA</sub>
 </td>
 </tr>
 </table>
@@ -46,20 +48,22 @@ image—without taking on a fleet of self-hosted runners.
 <h2>11 min 39 sec</h2>
 </td>
 <td align="center" width="33%">
-<sub>SETUP REDUCTION</sub>
-<h2>96.2%</h2>
+<sub>FASTER TO READY</sub>
+<h2>26.1×</h2>
 </td>
 <td align="center" width="33%">
-<sub>RUNNER COMPUTE / 1K RUNS*</sub>
+<sub>MONTHLY COMPUTE / 1K RUNS*</sub>
 <h2>$130 → $26.67</h2>
 </td>
 </tr>
 </table>
 
-> **Keep the convenience of GitHub-hosted runners. Add the speed and
-> consistency of your own pre-warmed environment.**
+> ### 96.2% less setup—without operating a self-hosted runner fleet.
+>
+> Keep the convenience of GitHub-hosted runners. Add the speed and consistency
+> of your own pre-warmed environment.
 
-| GitHub manages | Your team adds | Every job receives |
+| ◇ GitHub manages | ◆ Your team adds | ✓ Every job receives |
 |---|---|---|
 | Hosted infrastructure, clean environments, base runner images, and larger-runner scaling | Approved tools, services, repositories, dependencies, and configuration | A fresh, validated, ready-to-work environment |
 
