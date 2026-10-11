@@ -6,7 +6,7 @@
 
 [![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Custom_Images-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
 [![Platforms](https://img.shields.io/badge/Platforms-Linux_·_Windows_·_ARM64-8250DF?style=for-the-badge&logo=github&logoColor=white)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
-[![Verified POC](https://img.shields.io/badge/VERIFIED-26.1×_FASTER-1F883D?style=for-the-badge&logo=github&logoColor=white)](https://github.com/tsvi-solutions/custom_images_examples/actions/runs/38083459558)
+[![Verified POC](https://img.shields.io/badge/VERIFIED-26.1×_FASTER-1F883D?style=for-the-badge&logo=github&logoColor=white)](#-one-measured-implementation)
 
 Move repeatable setup out of every workflow run and into a reusable custom
 image—without taking on a fleet of self-hosted runners.
@@ -82,6 +82,84 @@ software into an image.
 > [!TIP]
 > The gain compounds. If a workflow installs three slow components, a custom
 > image can remove all three setup paths—not just optimize one command.
+
+## ◐ Before replacing GitHub Actions
+
+<table>
+<tr>
+<th width="33%">WITHOUT CUSTOM IMAGES</th>
+<th width="33%">WHY ALTERNATIVES APPEAL</th>
+<th width="33%">GITHUB ACTIONS + CUSTOM IMAGES</th>
+</tr>
+<tr>
+<td>Cold clone, tool installation, service setup, and dependency restoration repeat in every job.</td>
+<td>Other platforms may offer self-managed execution, native test splitting, typed pipeline configuration, or parent-child orchestration.</td>
+<td>Keep GitHub-hosted infrastructure while starting from your validated tools, services, dependencies, and workspace.</td>
+</tr>
+<tr>
+<td>Standard runner resources may not match a large build's CPU, memory, disk, or concurrency needs.</td>
+<td>Self-hosted fleets can provide specialized hardware and complete infrastructure control.</td>
+<td>Larger runners add more resources, autoscaling, runner groups, and custom images without operating the runner fleet yourself.</td>
+</tr>
+<tr>
+<td>CI YAML alone does not understand a monorepo's complete dependency graph.</td>
+<td>Dynamic pipelines and specialized build systems can select only affected work.</td>
+<td>Pair custom images with Nx, Bazel, Turborepo, or another graph-aware build system.</td>
+</tr>
+</table>
+
+> **Custom images optimize where work starts. A monorepo build system
+> optimizes what work runs. The strongest design uses both.**
+
+```mermaid
+flowchart LR
+    Image["CUSTOM IMAGE<br/>Environment ready"]
+    Graph["BUILD SYSTEM<br/>Affected targets only"]
+    Actions["GITHUB ACTIONS<br/>Orchestrate · Prove · Report"]
+    Image --> Actions
+    Graph --> Actions
+
+    classDef image fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:3px
+    classDef buildGraph fill:#fff8c5,color:#633c01,stroke:#bf8700,stroke-width:3px
+    classDef actions fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:3px
+    class Image image
+    class Graph buildGraph
+    class Actions actions
+```
+
+<details>
+<summary><strong>Competitive landscape for large monorepos</strong></summary>
+
+| Platform | Particularly strong when | Tradeoff or GitHub Actions response |
+|---|---|---|
+| **Buildkite** | You want self-hosted agents and scripts that upload dynamic pipeline steps at runtime. | Your team provisions, scales, upgrades, and secures agent infrastructure. GitHub larger runners plus custom images preserve a managed execution model. |
+| **CircleCI** | Historical test timing should split a suite across parallel containers automatically. | GitHub matrices provide parallel job variations, but timing-aware test distribution normally comes from the test framework or another tool. |
+| **TeamCity** | Complex build chains and reusable configuration benefit from Kotlin DSL and IDE support. | GitHub reusable workflows reduce duplication and remain close to pull requests, checks, permissions, and repository governance. |
+| **GitLab CI/CD** | Parent-child pipelines and change-based rules should organize independently defined areas of one repository. | GitHub supports path filters, matrices, and reusable workflows; graph-aware affected execution is usually delegated to the build-system layer. |
+
+Official references:
+
+- Buildkite:
+  [Self-hosted agents](https://buildkite.com/docs/agent/self-hosted) ·
+  [Dynamic pipelines](https://buildkite.com/docs/pipelines/configure/dynamic-pipelines)
+- CircleCI:
+  [Test splitting and parallelism](https://circleci.com/docs/guides/optimize/parallelism-faster-jobs/)
+- TeamCity:
+  [Kotlin DSL](https://www.jetbrains.com/help/teamcity/kotlin-dsl.html) ·
+  [Build-chain dependencies](https://www.jetbrains.com/help/teamcity/configuring-dependencies.html)
+- GitLab:
+  [Downstream and child pipelines](https://docs.gitlab.com/ci/pipelines/downstream_pipelines/) ·
+  [Pipeline architecture](https://docs.gitlab.com/ci/pipelines/pipeline_architectures/)
+- GitHub:
+  [Larger runners](https://docs.github.com/en/actions/concepts/runners/larger-runners) ·
+  [Reusable workflows](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows) ·
+  [Matrix jobs](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations)
+- Monorepo build systems:
+  [Nx affected](https://nx.dev/docs/features/ci-features/affected) ·
+  [Bazel remote caching](https://bazel.build/remote/caching) ·
+  [Turborepo CI](https://turborepo.dev/docs/crafting-your-repository/constructing-ci)
+
+</details>
 
 ## ◇ Model the value with your own workload
 
@@ -174,11 +252,41 @@ the same Git-to-SQL proof workload.
 | SQL Server ready | 3 min 24 sec | **0.27 sec** |
 | **Ready for work** | **12 min 06 sec** | **28 sec** |
 
-<div align="center">
+<details>
+<summary><strong>Verified evidence · exact timings and correctness checks</strong></summary>
 
-[![View benchmark](https://img.shields.io/badge/VIEW-CANONICAL_RUN_38083459558-1F883D?style=for-the-badge&logo=github&logoColor=white)](https://github.com/tsvi-solutions/custom_images_examples/actions/runs/38083459558)
+### Benchmark identity
 
-</div>
+| Evidence | Value |
+|---|---|
+| Source repository | `llvm/llvm-project` |
+| Commit | `b1dd93c6af666442840896e0f30c1506e587b6db` |
+| Tracked files | 186,978 |
+| Custom image | `windows-monorepo-sqlserver` version `1.1.0` |
+| Source run | `38083459558` |
+
+### Exact measured timings
+
+| Phase | Standard runner | Custom image |
+|---|---:|---:|
+| Activate prepared worktree | — | **0.14 sec** |
+| `actions/checkout` | **521.95 sec** | **26.73 sec** |
+| Complete checkout path | **521.95 sec** | **26.87 sec** |
+| SQL Server setup/readiness | **203.51 sec** | **0.27 sec** |
+| **Ready for dependent work** | **726.33 sec** | **27.79 sec** |
+| Git-to-SQL proof workload | **1.57 sec** | **0.35 sec** |
+
+### Correctness gates
+
+- Both jobs checked out the exact same pinned commit.
+- Both jobs reported the same 186,978 tracked files.
+- Both jobs inserted the Git evidence into SQL Server and queried it back.
+- Both jobs started on fresh GitHub-hosted VMs; no previous run warmed either
+  machine.
+- Queue time, VM provisioning, and the small tooling checkout were excluded
+  from the setup timer.
+
+</details>
 
 This result demonstrates the pattern; it is not a promise that every workload
 will become 26.1× faster. Add your software, retain the same before/after proof,
