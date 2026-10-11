@@ -4,14 +4,28 @@
 
 ### GitHub-managed foundation. Your software. Ready in seconds.
 
-[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Custom_Images-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
-[![Platforms](https://img.shields.io/badge/Platforms-Linux_·_Windows_·_ARM64-8250DF?style=for-the-badge&logo=github&logoColor=white)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
-[![Verified POC](https://img.shields.io/badge/VERIFIED-26.1×_FASTER-1F883D?style=for-the-badge&logo=github&logoColor=white)](#-one-measured-implementation)
+[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Custom_Images-2088FF?style=for-the-badge&logo=githubactions&logoColor=white&labelColor=0D1117)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
+[![Platforms](https://img.shields.io/badge/Platforms-Linux_%C2%B7_Windows_%C2%B7_ARM64-8250DF?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
+[![Verified POC](https://img.shields.io/badge/VERIFIED-26.1%C3%97_FASTER-1F883D?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](#-one-measured-implementation)
+[![Template guide](https://img.shields.io/badge/START_HERE-TEMPLATE_GUIDE-238636?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](#-use-this-repository-as-a-template)
 
 Move repeatable setup out of every workflow run and into a reusable custom
 image—without taking on a fleet of self-hosted runners.
 
 </div>
+
+<details>
+<summary><strong>Explore this guide</strong></summary>
+
+- [The custom-image advantage](#-the-custom-image-advantage)
+- [Where pre-warming creates value](#-where-pre-warming-creates-value)
+- [Before replacing GitHub Actions](#-before-replacing-github-actions)
+- [Model the value with your workload](#-model-the-value-with-your-own-workload)
+- [Review the measured implementation](#-one-measured-implementation)
+- [Use this repository as a template](#-use-this-repository-as-a-template)
+- [Keep the warm layer current](#-keep-the-warm-layer-current)
+
+</details>
 
 ---
 
@@ -19,7 +33,11 @@ image—without taking on a fleet of self-hosted runners.
 
 ### Move setup out of every run
 
-[![Custom images reduce setup time and runner spend while accelerating feedback](assets/custom-image-value.svg)](assets/custom-image-value.svg)
+<p align="center">
+  <a href="assets/custom-image-value.svg">
+    <img src="assets/custom-image-value.svg" width="100%" alt="Custom images reduce setup time and runner spend while accelerating feedback">
+  </a>
+</p>
 
 <table>
 <tr>
@@ -48,7 +66,11 @@ Official sources:
 
 ## ◆ Where pre-warming creates value
 
-[![Workloads that benefit from pre-warmed custom images](assets/prewarming-use-cases.svg)](assets/prewarming-use-cases.svg)
+<p align="center">
+  <a href="assets/prewarming-use-cases.svg">
+    <img src="assets/prewarming-use-cases.svg" width="100%" alt="Workloads that benefit from pre-warmed custom images">
+  </a>
+</p>
 
 | Workload | Put in the image | Remove from every job |
 |---|---|---|
@@ -140,7 +162,11 @@ Official GitHub guidance:
 > **Custom images optimize where work starts. A monorepo build system
 > optimizes what work runs. The strongest design uses both.**
 
-[![Custom images and graph-aware build systems combine with GitHub Actions](assets/optimized-ci-stack.svg)](assets/optimized-ci-stack.svg)
+<p align="center">
+  <a href="assets/optimized-ci-stack.svg">
+    <img src="assets/optimized-ci-stack.svg" width="100%" alt="Custom images and graph-aware build systems combine with GitHub Actions">
+  </a>
+</p>
 
 <details>
 <summary><strong>Competitive landscape for large monorepos</strong></summary>
@@ -195,9 +221,9 @@ volume, retention policy, and GitHub plan—not a generic labor-cost multiplier.
 
 | Runs / month | Standard Windows path | Custom-image path* |
 |---:|---:|---:|
-| 1,000 | **$130.00** | **$26.67** |
-| 10,000 | **$1,300.00** | **$224.67** |
-| 50,000 | **$6,500.00** | **$1,104.67** |
+| 1,000 | $130.00 | **$26.67** |
+| 10,000 | $1,300.00 | **$224.67** |
+| 50,000 | $6,500.00 | **$1,104.67** |
 
 <sub>
 * Uses this POC's measured 13 billed minutes versus one billed minute, plus
@@ -213,7 +239,7 @@ This is a runner-compute example, not a forecast of a customer's final invoice.
 
 | 1,000-run example | Calculation | Monthly cost |
 |---|---|---:|
-| Standard Windows path | 1,000 × 13 billed min × $0.010 | **$130.00** |
+| Standard Windows path | 1,000 × 13 billed min × $0.010 | $130.00 |
 | Custom-image path | 1,000 × 1 billed min × $0.022 + $4.67 | **$26.67** |
 
 The rates come from
@@ -268,11 +294,11 @@ the same Git-to-SQL proof workload.
 | Phase | Standard runner | Custom image |
 |---|---:|---:|
 | Activate prepared worktree | — | **0.14 sec** |
-| `actions/checkout` | **521.95 sec** | **26.73 sec** |
-| Complete checkout path | **521.95 sec** | **26.87 sec** |
-| SQL Server setup/readiness | **203.51 sec** | **0.27 sec** |
+| `actions/checkout` | 521.95 sec | **26.73 sec** |
+| Complete checkout path | 521.95 sec | **26.87 sec** |
+| SQL Server setup/readiness | 203.51 sec | **0.27 sec** |
 | **Ready for dependent work** | **726.33 sec** | **27.79 sec** |
-| Git-to-SQL proof workload | **1.57 sec** | **0.35 sec** |
+| Git-to-SQL proof workload | 1.57 sec | **0.35 sec** |
 
 ### Correctness gates
 
@@ -292,7 +318,16 @@ and publish your own measured result.
 
 ## ⌘ Use this repository as a template
 
-[![Configure, build, consume, and prove the custom-image template](assets/template-journey.svg)](assets/template-journey.svg)
+> [!IMPORTANT]
+> **Ready to prove the value on your workload?** Fork or clone this repository,
+> configure the image-generation and consumer runners, set
+> `BENCHMARK_REPOSITORY`, and publish your own before/after result.
+
+<p align="center">
+  <a href="assets/template-journey.svg">
+    <img src="assets/template-journey.svg" width="100%" alt="Configure, build, consume, and prove the custom-image template">
+  </a>
+</p>
 
 | Template component | What to customize |
 |---|---|
@@ -387,7 +422,11 @@ for authentication headers or token markers before snapshotting.
 
 ## ↻ Keep the warm layer current
 
-[![Weekly image rebuild and daily readiness-canary lifecycle](assets/image-lifecycle.svg)](assets/image-lifecycle.svg)
+<p align="center">
+  <a href="assets/image-lifecycle.svg">
+    <img src="assets/image-lifecycle.svg" width="100%" alt="Weekly image rebuild and daily readiness-canary lifecycle">
+  </a>
+</p>
 
 GitHub maintains the base image; your scheduled workflow must rebuild and
 revalidate the custom layer. This template performs a clean weekly rebuild and
