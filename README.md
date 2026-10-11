@@ -19,27 +19,26 @@ image—without taking on a fleet of self-hosted runners.
 
 ### Move setup out of every run
 
-<table>
-<tr>
-<th align="center" width="35%">○ WITHOUT CUSTOM IMAGE</th>
-<th align="center" width="30%">◆ PREPARE ONCE</th>
-<th align="center" width="35%">✓ WITH CUSTOM IMAGE</th>
-</tr>
-<tr>
-<td align="center">
-<h2>12 min 06 sec</h2>
-<sub>CLONE EVERYTHING · INSTALL SOFTWARE</sub>
-</td>
-<td align="center">
-<h2>Build once</h2>
-<sub>GITHUB BASE · YOUR TOOLS · YOUR WORKSPACE</sub>
-</td>
-<td align="center">
-<h2>28 sec</h2>
-<sub>VALIDATE FRESHNESS · FETCH ONLY THE DELTA</sub>
-</td>
-</tr>
-</table>
+```mermaid
+flowchart LR
+    Before["WITHOUT IMAGE<br/>12 min 06 sec<br/>Clone + install"]
+    Build["BUILD ONCE<br/>GitHub base + your layer"]
+    After["WITH IMAGE<br/>28 sec<br/>Validate + fetch delta"]
+    Value["BUSINESS IMPACT<br/>26.1× faster<br/>$130 → $26.67 / 1K runs"]
+
+    Before -->|"prepare once"| Build
+    Build -->|"start every run ready"| After
+    After --> Value
+
+    classDef baseline fill:#ffebe9,color:#82071e,stroke:#cf222e,stroke-width:3px
+    classDef warmLayer fill:#fbefff,color:#5a1e75,stroke:#8250df,stroke-width:3px
+    classDef readyState fill:#dafbe1,color:#116329,stroke:#1a7f37,stroke-width:3px
+    classDef outcome fill:#ddf4ff,color:#0550ae,stroke:#0969da,stroke-width:3px
+    class Before baseline
+    class Build warmLayer
+    class After readyState
+    class Value outcome
+```
 
 <table>
 <tr>
