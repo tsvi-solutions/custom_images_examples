@@ -1,175 +1,173 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="860" viewBox="0 0 1200 860" role="img" aria-labelledby="title desc">
-  <title id="title">Stop paying the setup tax on every workflow run</title>
-  <desc id="desc">Without a custom image, every run spends runner time and money preparing source and workspace files, installing SDKs, databases, browsers and compilers, restoring packages, generating files, and configuring certificates, paths, services and policies. A custom image captures that software and workspace preparation before the job. Each run then validates the image, loads its current workflow inputs, and starts productive work with less setup time, lower runner cost, and faster feedback.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">Repeat setup every run or capture it once in a custom image</title>
+  <desc id="desc">A visual comparison. Without a custom image, source preparation, software installation, and workspace configuration each consume time and runner cost before productive work begins, and the cycle repeats. With a custom image, those three layers are captured once inside a validated reusable image, so each run follows a short path to productive work with less time and cost and faster feedback.</desc>
   <defs>
-    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0d1117"/>
-      <stop offset="0.55" stop-color="#161b22"/>
+      <stop offset="0.6" stop-color="#161b22"/>
       <stop offset="1" stop-color="#111827"/>
     </linearGradient>
-    <linearGradient id="coldHeader" x1="0" y1="0" x2="1" y2="0">
+    <linearGradient id="cold" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#da3633"/>
       <stop offset="1" stop-color="#f85149"/>
     </linearGradient>
-    <linearGradient id="warmHeader" x1="0" y1="0" x2="1" y2="0">
+    <linearGradient id="warm" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#238636"/>
-      <stop offset="1" stop-color="#2ea043"/>
+      <stop offset="1" stop-color="#3fb950"/>
     </linearGradient>
-    <linearGradient id="warmOutcome" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="work" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#1f6feb"/>
-      <stop offset="1" stop-color="#238636"/>
+      <stop offset="1" stop-color="#8250df"/>
     </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000000" flood-opacity="0.34"/>
+    <linearGradient id="capsule" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#12261a"/>
+      <stop offset="1" stop-color="#0f3020"/>
+    </linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#000000" flood-opacity="0.38"/>
     </filter>
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
       <feGaussianBlur stdDeviation="6" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
     <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
-      <path d="M32 0H0V32" fill="none" stroke="#30363d" stroke-width="1" opacity="0.22"/>
+      <path d="M32 0H0V32" fill="none" stroke="#30363d" stroke-width="1" opacity="0.2"/>
     </pattern>
-    <marker id="coldArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+    <marker id="grayArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#8b949e"/>
+    </marker>
+    <marker id="redArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
       <path d="M0 0L10 5L0 10Z" fill="#f85149"/>
     </marker>
-    <marker id="warmArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+    <marker id="greenArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
       <path d="M0 0L10 5L0 10Z" fill="#3fb950"/>
-    </marker>
-    <marker id="neutralArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-      <path d="M0 0L10 5L0 10Z" fill="#8b949e"/>
     </marker>
   </defs>
 
-  <rect width="1200" height="860" rx="28" fill="url(#background)"/>
-  <rect width="1200" height="860" rx="28" fill="url(#grid)"/>
-  <circle cx="1080" cy="70" r="190" fill="#8250df" opacity="0.08"/>
-  <circle cx="100" cy="800" r="220" fill="#1f6feb" opacity="0.07"/>
+  <rect width="1200" height="700" rx="28" fill="url(#bg)"/>
+  <rect width="1200" height="700" rx="28" fill="url(#grid)"/>
+  <circle cx="1110" cy="30" r="190" fill="#8250df" opacity="0.08"/>
+  <circle cx="80" cy="670" r="170" fill="#1f6feb" opacity="0.07"/>
 
-  <text x="600" y="48" fill="#f0f6fc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="30" font-weight="800" text-anchor="middle" letter-spacing="1">STOP PAYING THE SETUP TAX</text>
-  <text x="600" y="78" fill="#8b949e" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" text-anchor="middle" letter-spacing="1.6">MOVE SOFTWARE + WORKSPACE PREPARATION OUT OF EVERY RUN</text>
+  <text x="600" y="48" fill="#f0f6fc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="30" font-weight="900" text-anchor="middle" letter-spacing="1">MOVE SETUP OUT OF THE RUN</text>
 
-  <rect x="502" y="102" width="196" height="38" rx="19" fill="#21262d" stroke="#6e7681"/>
-  <circle cx="527" cy="121" r="8" fill="#a371f7" filter="url(#glow)"/>
-  <text x="610" y="126" fill="#f0f6fc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" text-anchor="middle" letter-spacing="1.2">EVERY CODE CHANGE</text>
-  <path d="M540 140C490 154 410 156 315 173" fill="none" stroke="#8b949e" stroke-width="2" marker-end="url(#neutralArrow)"/>
-  <path d="M660 140C710 154 790 156 885 173" fill="none" stroke="#8b949e" stroke-width="2" marker-end="url(#neutralArrow)"/>
+  <rect x="535" y="72" width="130" height="48" rx="24" fill="#21262d" stroke="#6e7681" stroke-width="2"/>
+  <path d="M575 88L559 96L575 104M625 88L641 96L625 104M611 83L590 109" fill="none" stroke="#c8b6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M560 120C505 135 420 136 325 153M640 120C695 135 780 136 875 153" fill="none" stroke="#8b949e" stroke-width="2.5" marker-end="url(#grayArrow)"/>
 
   <g filter="url(#shadow)">
-    <rect x="55" y="172" width="520" height="642" rx="24" fill="#161b22" stroke="#6e2c2b" stroke-width="2"/>
-    <path d="M79 172H551A24 24 0 0 1 575 196V244H55V196A24 24 0 0 1 79 172Z" fill="url(#coldHeader)"/>
-    <circle cx="94" cy="208" r="16" fill="#ffffff" opacity="0.16"/>
-    <path d="M86 208H102M94 200V216" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
-    <text x="124" y="203" fill="#ffffff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="18" font-weight="800">WITHOUT CUSTOM IMAGE</text>
-    <text x="124" y="226" fill="#ffffff" opacity="0.84" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12" letter-spacing="1">EVERY SETUP TASK RUNS AGAIN</text>
+    <rect x="50" y="150" width="520" height="495" rx="26" fill="#161b22" stroke="#6e2c2b" stroke-width="2"/>
+    <path d="M76 150H544A26 26 0 0 1 570 176V220H50V176A26 26 0 0 1 76 150Z" fill="url(#cold)"/>
+    <circle cx="90" cy="185" r="17" fill="#ffffff" opacity="0.17"/>
+    <path d="M81 185H99M90 176V194" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+    <text x="122" y="183" fill="#ffffff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="19" font-weight="900">WITHOUT CUSTOM IMAGE</text>
   </g>
 
-  <path d="M315 290V608" fill="none" stroke="#f85149" stroke-width="3" stroke-dasharray="3 9" stroke-linecap="round"/>
+  <path d="M310 267V480" fill="none" stroke="#f85149" stroke-width="3" stroke-dasharray="3 9"/>
+
+  <g filter="url(#shadow)" font-family="Inter,Segoe UI,Arial,sans-serif">
+    <rect x="105" y="242" width="410" height="76" rx="18" fill="#21262d" stroke="#6e2c2b"/>
+    <circle cx="153" cy="280" r="25" fill="#3a1d20"/>
+    <path d="M139 272H167M139 280H163M139 288H159" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
+    <text x="192" y="286" fill="#f0f6fc" font-size="18" font-weight="800">SOURCE</text>
+    <circle cx="430" cy="280" r="22" fill="#3a1d20" stroke="#f85149"/>
+    <circle cx="430" cy="280" r="12" fill="none" stroke="#ff7b72" stroke-width="2.5"/>
+    <path d="M430 280V271M430 280L437 284" stroke="#ff7b72" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="482" cy="280" r="22" fill="#3a1d20" stroke="#f85149"/>
+    <text x="482" y="288" fill="#ff7b72" font-size="23" font-weight="900" text-anchor="middle">$</text>
+
+    <rect x="105" y="338" width="410" height="76" rx="18" fill="#21262d" stroke="#6e2c2b"/>
+    <circle cx="153" cy="376" r="25" fill="#3a1d20"/>
+    <path d="M141 387L165 363M142 363L165 386M138 371L147 362M160 387L169 378" fill="none" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
+    <text x="192" y="382" fill="#f0f6fc" font-size="18" font-weight="800">TOOLS</text>
+    <circle cx="430" cy="376" r="22" fill="#3a1d20" stroke="#f85149"/>
+    <circle cx="430" cy="376" r="12" fill="none" stroke="#ff7b72" stroke-width="2.5"/>
+    <path d="M430 376V367M430 376L437 380" stroke="#ff7b72" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="482" cy="376" r="22" fill="#3a1d20" stroke="#f85149"/>
+    <text x="482" y="384" fill="#ff7b72" font-size="23" font-weight="900" text-anchor="middle">$</text>
+
+    <rect x="105" y="434" width="410" height="76" rx="18" fill="#21262d" stroke="#6e2c2b"/>
+    <circle cx="153" cy="472" r="25" fill="#3a1d20"/>
+    <path d="M140 463H166M140 472H166M140 481H166M147 459V467M159 468V476M151 477V485" fill="none" stroke="#ff7b72" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="192" y="478" fill="#f0f6fc" font-size="18" font-weight="800">WORKSPACE</text>
+    <circle cx="430" cy="472" r="22" fill="#3a1d20" stroke="#f85149"/>
+    <circle cx="430" cy="472" r="12" fill="none" stroke="#ff7b72" stroke-width="2.5"/>
+    <path d="M430 472V463M430 472L437 476" stroke="#ff7b72" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="482" cy="472" r="22" fill="#3a1d20" stroke="#f85149"/>
+    <text x="482" y="480" fill="#ff7b72" font-size="23" font-weight="900" text-anchor="middle">$</text>
+  </g>
+
+  <path d="M105 571C24 571 24 280 88 280" fill="none" stroke="#f85149" stroke-width="3.5" stroke-dasharray="9 8" marker-end="url(#redArrow)"/>
+  <circle cx="52" cy="418" r="18" fill="#2d1719" stroke="#f85149"/>
+  <path d="M43 418A10 10 0 1 1 51 427M51 427V419M51 427H43" fill="none" stroke="#ff7b72" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="182" y="537" width="256" height="48" rx="24" fill="#30363d" stroke="#8b949e"/>
+  <path d="M216 553L230 561L216 569Z" fill="#c9d1d9"/>
+  <text x="320" y="567" fill="#f0f6fc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="900" text-anchor="middle" letter-spacing="1">WORK</text>
+
   <g font-family="Inter,Segoe UI,Arial,sans-serif">
-    <rect x="112" y="264" width="406" height="86" rx="17" fill="#21262d" stroke="#6e2c2b"/>
-    <circle cx="149" cy="307" r="19" fill="#f85149" opacity="0.18"/>
-    <path d="M140 301H158M140 307H155M140 313H152" stroke="#ff7b72" stroke-width="2.5" stroke-linecap="round"/>
-    <text x="181" y="292" fill="#f0f6fc" font-size="16" font-weight="800">1 · CLONE + MATERIALIZE</text>
-    <text x="181" y="317" fill="#8b949e" font-size="12">Full history · large workspace</text>
-    <text x="181" y="336" fill="#8b949e" font-size="12">Submodules · dependencies · generated indexes</text>
-    <rect x="411" y="276" width="91" height="24" rx="12" fill="#3a1d20" stroke="#f85149"/>
-    <text x="456.5" y="293" fill="#ff7b72" font-size="10" font-weight="800" text-anchor="middle">TIME + $</text>
+    <circle cx="213" cy="616" r="21" fill="#3a1d20" stroke="#f85149"/>
+    <circle cx="213" cy="616" r="11" fill="none" stroke="#ff7b72" stroke-width="2.5"/>
+    <path d="M213 616V608M213 616L220 620" stroke="#ff7b72" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M242 626L254 614L266 626" fill="none" stroke="#f85149" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 
-    <rect x="112" y="370" width="406" height="96" rx="17" fill="#21262d" stroke="#6e2c2b"/>
-    <circle cx="149" cy="418" r="19" fill="#f85149" opacity="0.18"/>
-    <path d="M140 418L146 424L158 410" fill="none" stroke="#ff7b72" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="181" y="398" fill="#f0f6fc" font-size="16" font-weight="800">2 · INSTALL TOOLS + SERVICES</text>
-    <text x="181" y="424" fill="#8b949e" font-size="12">SDKs · databases · browsers · compilers</text>
-    <text x="181" y="444" fill="#8b949e" font-size="12">CLIs · native libraries · scanners · emulators</text>
-    <rect x="411" y="382" width="91" height="24" rx="12" fill="#3a1d20" stroke="#f85149"/>
-    <text x="456.5" y="399" fill="#ff7b72" font-size="10" font-weight="800" text-anchor="middle">TIME + $</text>
+    <circle cx="321" cy="616" r="21" fill="#3a1d20" stroke="#f85149"/>
+    <text x="321" y="624" fill="#ff7b72" font-size="23" font-weight="900" text-anchor="middle">$</text>
+    <path d="M350 626L362 614L374 626" fill="none" stroke="#f85149" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 
-    <rect x="112" y="486" width="406" height="108" rx="17" fill="#21262d" stroke="#6e2c2b"/>
-    <circle cx="149" cy="540" r="19" fill="#f85149" opacity="0.18"/>
-    <path d="M140 540H158M149 531V549" stroke="#ff7b72" stroke-width="2.5" stroke-linecap="round"/>
-    <text x="181" y="514" fill="#f0f6fc" font-size="16" font-weight="800">3 · PREPARE WORKSPACE</text>
-    <text x="181" y="540" fill="#8b949e" font-size="12">Restore packages · generate files · seed databases</text>
-    <text x="181" y="560" fill="#8b949e" font-size="12">Certificates · PATH · services · policies</text>
-    <text x="181" y="580" fill="#8b949e" font-size="12">Create directories · configure local tooling</text>
-    <rect x="411" y="498" width="91" height="24" rx="12" fill="#3a1d20" stroke="#f85149"/>
-    <text x="456.5" y="515" fill="#ff7b72" font-size="10" font-weight="800" text-anchor="middle">TIME + $</text>
-
-    <rect x="198" y="612" width="234" height="44" rx="22" fill="#30363d" stroke="#8b949e"/>
-    <text x="315" y="640" fill="#f0f6fc" font-size="14" font-weight="800" text-anchor="middle" letter-spacing="1.3">START PRODUCTIVE WORK</text>
+    <circle cx="429" cy="616" r="21" fill="#3a1d20" stroke="#f85149"/>
+    <path d="M419 616A10 10 0 1 1 427 625M427 625V617M427 625H419" fill="none" stroke="#ff7b72" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M458 607L470 619L482 607" fill="none" stroke="#f85149" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
-
-  <text x="315" y="676" fill="#ff7b72" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="1.2">THREE SETUP BILLS · ON EVERY RUN</text>
-  <rect x="105" y="686" width="420" height="96" rx="20" fill="#2d1719" stroke="#f85149" stroke-width="2"/>
-  <text x="175" y="715" fill="#ff7b72" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="1">SETUP TIME</text>
-  <text x="175" y="750" fill="#ffffff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="27" font-weight="900" text-anchor="middle">MORE</text>
-  <path d="M245 706V763M385 706V763" stroke="#6e2c2b"/>
-  <text x="315" y="715" fill="#ff7b72" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="1">RUNNER COST</text>
-  <text x="315" y="750" fill="#ffffff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="27" font-weight="900" text-anchor="middle">MORE</text>
-  <text x="455" y="715" fill="#ff7b72" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="1">FEEDBACK</text>
-  <text x="455" y="750" fill="#ffffff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="25" font-weight="900" text-anchor="middle">SLOWER</text>
-  <path d="M105 734C26 734 26 307 105 307" fill="none" stroke="#f85149" stroke-width="3" stroke-dasharray="8 8" marker-end="url(#coldArrow)"/>
-  <rect x="12" y="505" width="108" height="28" rx="14" fill="#2d1719" stroke="#6e2c2b"/>
-  <text x="66" y="524" fill="#ff7b72" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10" font-weight="800" text-anchor="middle" letter-spacing="1">PAY AGAIN</text>
 
   <g filter="url(#shadow)">
-    <rect x="625" y="172" width="520" height="642" rx="24" fill="#161b22" stroke="#2b6f3b" stroke-width="2"/>
-    <path d="M649 172H1121A24 24 0 0 1 1145 196V244H625V196A24 24 0 0 1 649 172Z" fill="url(#warmHeader)"/>
-    <circle cx="664" cy="208" r="16" fill="#ffffff" opacity="0.16"/>
-    <path d="M656 208L662 214L674 200" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="694" y="203" fill="#ffffff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="18" font-weight="800">WITH CUSTOM IMAGE</text>
-    <text x="694" y="226" fill="#ffffff" opacity="0.84" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12" letter-spacing="1">SETUP CAPTURED BEFORE THE JOB</text>
+    <rect x="630" y="150" width="520" height="495" rx="26" fill="#161b22" stroke="#2b6f3b" stroke-width="2"/>
+    <path d="M656 150H1124A26 26 0 0 1 1150 176V220H630V176A26 26 0 0 1 656 150Z" fill="url(#warm)"/>
+    <circle cx="670" cy="185" r="17" fill="#ffffff" opacity="0.17"/>
+    <path d="M661 185L668 192L681 177" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="702" y="183" fill="#ffffff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="19" font-weight="900">WITH CUSTOM IMAGE</text>
   </g>
+
+  <g filter="url(#shadow)">
+    <rect x="700" y="252" width="380" height="220" rx="35" fill="url(#capsule)" stroke="#3fb950" stroke-width="3"/>
+    <path d="M700 310Q890 230 1080 310" fill="none" stroke="#56d364" stroke-width="2" opacity="0.45"/>
+    <path d="M890 267L908 274V287C908 300 900 308 890 312C880 308 872 300 872 287V274Z" fill="#1c4928" stroke="#3fb950" stroke-width="2"/>
+    <path d="M881 288L887 294L899 280" fill="none" stroke="#7ee787" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <circle cx="780" cy="365" r="48" fill="#1c4928" stroke="#3fb950"/>
+    <path d="M761 354H799M761 365H793M761 376H787" stroke="#7ee787" stroke-width="4" stroke-linecap="round"/>
+
+    <circle cx="890" cy="365" r="48" fill="#1c4928" stroke="#3fb950"/>
+    <path d="M870 380L910 340M870 340L910 380M864 353L879 338M901 387L916 372" fill="none" stroke="#7ee787" stroke-width="4" stroke-linecap="round"/>
+
+    <circle cx="1000" cy="365" r="48" fill="#1c4928" stroke="#3fb950"/>
+    <path d="M977 350H1023M977 365H1023M977 380H1023M988 343V357M1011 358V372M994 373V387" fill="none" stroke="#7ee787" stroke-width="3.5" stroke-linecap="round"/>
+
+    <path d="M780 421H1000" stroke="#3fb950" stroke-width="2" opacity="0.5"/>
+    <path d="M872 421L890 439L908 421" fill="#12261a" stroke="#3fb950" stroke-width="2"/>
+  </g>
+
+  <path d="M890 472V520" stroke="#3fb950" stroke-width="5" marker-end="url(#greenArrow)"/>
+  <rect x="762" y="537" width="256" height="48" rx="24" fill="url(#work)" stroke="#58a6ff" filter="url(#glow)"/>
+  <path d="M796 553L810 561L796 569Z" fill="#ffffff"/>
+  <text x="900" y="567" fill="#ffffff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="900" text-anchor="middle" letter-spacing="1">WORK</text>
+
+  <path d="M1080 571C1165 571 1165 365 1090 365" fill="none" stroke="#3fb950" stroke-width="4" marker-end="url(#greenArrow)"/>
+  <circle cx="1134" cy="457" r="18" fill="#15261a" stroke="#3fb950"/>
+  <path d="M1125 457A10 10 0 1 1 1133 466M1133 466V458M1133 466H1125" fill="none" stroke="#56d364" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 
   <g font-family="Inter,Segoe UI,Arial,sans-serif">
-    <rect x="682" y="264" width="406" height="226" rx="20" fill="#12261a" stroke="#2ea043" stroke-width="2"/>
-    <rect x="830" y="278" width="110" height="25" rx="12.5" fill="#1c4928" stroke="#3fb950"/>
-    <text x="885" y="295" fill="#7ee787" font-size="10" font-weight="800" text-anchor="middle" letter-spacing="1">BUILT ONCE</text>
-    <circle cx="730" cy="328" r="22" fill="#238636" opacity="0.3"/>
-    <path d="M718 321L730 314L742 321V335L730 342L718 335Z" fill="none" stroke="#56d364" stroke-width="2.2"/>
-    <path d="M718 321L730 328L742 321M730 328V342" fill="none" stroke="#56d364" stroke-width="2.2"/>
-    <text x="765" y="321" fill="#f0f6fc" font-size="16" font-weight="800">READY INSIDE THE IMAGE</text>
-    <text x="765" y="343" fill="#7ee787" font-size="11">The same setup is already captured and validated</text>
+    <circle cx="793" cy="616" r="21" fill="#15261a" stroke="#3fb950"/>
+    <circle cx="793" cy="616" r="11" fill="none" stroke="#56d364" stroke-width="2.5"/>
+    <path d="M793 616V608M793 616L800 620" stroke="#56d364" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M822 607L834 619L846 607" fill="none" stroke="#3fb950" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 
-    <circle cx="718" cy="378" r="10" fill="#238636"/>
-    <path d="M713 378L717 382L724 374" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="740" y="383" fill="#c9d1d9" font-size="13">Repository workspace + dependencies</text>
-    <circle cx="718" cy="418" r="10" fill="#238636"/>
-    <path d="M713 418L717 422L724 414" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="740" y="423" fill="#c9d1d9" font-size="13">SDKs + services + browsers + compilers</text>
-    <circle cx="718" cy="458" r="10" fill="#238636"/>
-    <path d="M713 458L717 462L724 454" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="740" y="463" fill="#c9d1d9" font-size="13">Workspace configuration + policies</text>
+    <circle cx="901" cy="616" r="21" fill="#15261a" stroke="#3fb950"/>
+    <text x="901" y="624" fill="#56d364" font-size="23" font-weight="900" text-anchor="middle">$</text>
+    <path d="M930 607L942 619L954 607" fill="none" stroke="#3fb950" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 
-    <path d="M885 490V512" stroke="#3fb950" stroke-width="4"/>
-    <rect x="682" y="512" width="194" height="62" rx="17" fill="#15261a" stroke="#2ea043"/>
-    <circle cx="711" cy="543" r="16" fill="#238636" opacity="0.3"/>
-    <path d="M703 543L709 549L719 536" fill="none" stroke="#56d364" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="736" y="539" fill="#f0f6fc" font-size="14" font-weight="800">Validate</text>
-    <text x="736" y="557" fill="#7ee787" font-size="10">Fresh + healthy</text>
-
-    <path d="M876 543H892" stroke="#3fb950" stroke-width="3" marker-end="url(#warmArrow)"/>
-    <rect x="894" y="512" width="194" height="62" rx="17" fill="#15261a" stroke="#2ea043"/>
-    <circle cx="923" cy="543" r="16" fill="#238636" opacity="0.3"/>
-    <path d="M915 543H929M925 537L931 543L925 549" fill="none" stroke="#56d364" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="948" y="539" fill="#f0f6fc" font-size="14" font-weight="800">Load run inputs</text>
-    <text x="948" y="557" fill="#7ee787" font-size="10">Code + configuration</text>
-
-    <path d="M885 574V610" stroke="#3fb950" stroke-width="4"/>
-    <rect x="768" y="610" width="234" height="44" rx="22" fill="#1f6feb" stroke="#58a6ff" filter="url(#glow)"/>
-    <text x="885" y="638" fill="#ffffff" font-size="14" font-weight="800" text-anchor="middle" letter-spacing="1.3">START PRODUCTIVE WORK</text>
+    <circle cx="1009" cy="616" r="21" fill="#15261a" stroke="#3fb950"/>
+    <path d="M999 616A10 10 0 1 1 1007 625M1007 625V617M1007 625H999" fill="none" stroke="#56d364" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M1038 626L1050 614L1062 626" fill="none" stroke="#3fb950" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
-
-  <text x="885" y="676" fill="#56d364" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="1.2">ONE IMAGE BUILD · SAVINGS ON EVERY RUN</text>
-  <rect x="675" y="686" width="420" height="96" rx="20" fill="url(#warmOutcome)" stroke="#58a6ff" stroke-width="2"/>
-  <text x="745" y="715" fill="#ffffff" opacity="0.84" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="1">SETUP TIME</text>
-  <text x="745" y="750" fill="#ffffff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="27" font-weight="900" text-anchor="middle">LESS</text>
-  <path d="M815 706V763M955 706V763" stroke="#ffffff" opacity="0.24"/>
-  <text x="885" y="715" fill="#ffffff" opacity="0.84" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="1">RUNNER COST</text>
-  <text x="885" y="750" fill="#ffffff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="27" font-weight="900" text-anchor="middle">LESS</text>
-  <text x="1025" y="715" fill="#ffffff" opacity="0.84" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="1">FEEDBACK</text>
-  <text x="1025" y="750" fill="#ffffff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="25" font-weight="900" text-anchor="middle">FASTER</text>
-  <path d="M1095 734C1174 734 1174 376 1095 376" fill="none" stroke="#3fb950" stroke-width="4" marker-end="url(#warmArrow)"/>
-  <rect x="1078" y="505" width="108" height="28" rx="14" fill="#15261a" stroke="#2b6f3b"/>
-  <text x="1132" y="524" fill="#56d364" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10" font-weight="800" text-anchor="middle" letter-spacing="1">REUSE</text>
-
-  <text x="600" y="838" fill="#8b949e" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" text-anchor="middle" letter-spacing="0.8">GITHUB-MANAGED FOUNDATION  ·  YOUR VALIDATED SOFTWARE  ·  READY FOR THE NEXT CHANGE</text>
 </svg>
