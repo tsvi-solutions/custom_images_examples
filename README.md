@@ -2,7 +2,7 @@
 
 # ◈ Pre-warmed GitHub-hosted runners
 
-### GitHub-managed foundation. Your software. Ready in seconds.
+### GitHub Actions custom images · GitHub-managed foundation · Ready in seconds.
 
 [![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Custom_Images-2088FF?style=for-the-badge&logo=githubactions&logoColor=white&labelColor=0D1117)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
 [![Platforms](https://img.shields.io/badge/Platforms-Linux_%C2%B7_Windows_%C2%B7_ARM64-8250DF?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
