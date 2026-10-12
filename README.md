@@ -7,25 +7,11 @@
 [![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Custom_Images-2088FF?style=for-the-badge&logo=githubactions&logoColor=white&labelColor=0D1117)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
 [![Platforms](https://img.shields.io/badge/Platforms-Linux_%C2%B7_Windows_%C2%B7_ARM64-8250DF?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
 [![Verified POC](https://img.shields.io/badge/VERIFIED-26.1%C3%97_FASTER-1F883D?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](#-one-measured-implementation)
-[![Template guide](https://img.shields.io/badge/START_HERE-TEMPLATE_GUIDE-238636?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](#-use-this-repository-as-a-template)
+[![Use template](https://img.shields.io/badge/START_HERE-USE_TEMPLATE-238636?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](#-use-this-template)
 
-Move repeatable setup out of every workflow run and into a reusable custom
-image—without operating a fleet of self-hosted runners.
+Build the environment once. Stop paying the setup tax on every run.
 
 </div>
-
-<details>
-<summary><strong>Jump to a section</strong></summary>
-
-- [Why custom images](#-why-custom-images)
-- [Where they create value](#-where-they-create-value)
-- [How the layers fit](#-how-the-layers-fit)
-- [Cost example](#-cost-example)
-- [Measured proof](#-one-measured-implementation)
-- [Use the template](#-use-this-repository-as-a-template)
-- [Keep images current](#-keep-images-current)
-
-</details>
 
 ---
 
@@ -33,111 +19,62 @@ image—without operating a fleet of self-hosted runners.
 
 <p align="center">
   <a href="assets/custom-image-value.svg">
-    <img src="assets/custom-image-value.svg" width="100%" alt="Without a custom image, every run repeats repository materialization, SDK and service installation, package restoration, generated files, and workspace configuration; a warm image captures that setup once to reduce time and runner cost and accelerate feedback">
+    <img src="assets/custom-image-value.svg" width="100%" alt="Without a custom image, every run repeats repository materialization, software installation, and workspace preparation; a warm image captures that setup once to reduce time and runner cost and accelerate feedback">
   </a>
 </p>
 
 <table>
 <tr>
-<td align="center" width="33%"><strong>↯ START FASTER</strong><br><sub>REMOVE REPEATED SETUP</sub></td>
-<td align="center" width="33%"><strong>◇ SPEND LESS</strong><br><sub>STOP REBUILDING THE SAME ENVIRONMENT</sub></td>
-<td align="center" width="33%"><strong>✓ STAY CONSISTENT</strong><br><sub>START FROM A VALIDATED FOUNDATION</sub></td>
+<td align="center" width="33%"><strong>↯ FASTER</strong><br><sub>REMOVE SETUP</sub></td>
+<td align="center" width="33%"><strong>◇ LOWER COST</strong><br><sub>STOP REBUILDING</sub></td>
+<td align="center" width="33%"><strong>✓ CONSISTENT</strong><br><sub>START VALIDATED</sub></td>
 </tr>
 </table>
 
-> **GitHub manages the runner foundation. You add the warm layer.**
-
-## ◆ Where they create value
+## ◆ Where they help
 
 <p align="center">
   <a href="assets/prewarming-use-cases.svg">
-    <img src="assets/prewarming-use-cases.svg" width="100%" alt="Workloads that benefit from pre-warmed custom images">
+    <img src="assets/prewarming-use-cases.svg" width="100%" alt="Enterprise, mobile, web, data, machine learning, database, repository, security, and infrastructure workloads that benefit from pre-warmed custom images">
   </a>
 </p>
 
-Pre-warm work that is **large, stable, deterministic, slow to prepare, and safe
-to capture**. Never bake secrets, production data, short-lived credentials, or
-unlicensed software into an image.
+Capture work that is **large, stable, slow, deterministic, and safe**.
 
-| Put in the image | Keep dynamic |
-|---|---|
-| SDKs, compilers, services, browsers, approved tools, stable assets, prepared workspaces | Source changes, secrets, run-specific configuration, and frequently changing dependencies |
+[See workload examples, caching guidance, and architecture →](docs/deep-dive.md)
 
-[Explore 14 workload examples and caching guidance →](docs/deep-dive.md#workload-examples)
+## ✓ One measured implementation
 
-## ◐ How the layers fit
+**Windows + SQL Server + full-history LLVM workspace**
 
-<p align="center">
-  <a href="assets/optimized-ci-stack.svg">
-    <img src="assets/optimized-ci-stack.svg" width="100%" alt="Custom images and graph-aware build systems combine with GitHub Actions">
-  </a>
-</p>
+| Ready for work | Standard runner | Custom image |
+|---|---:|---:|
+| Measured time | 12 min 06 sec | **28 sec** |
 
-| Layer | Optimizes |
-|---|---|
-| **Custom image** | Where work starts |
-| **Nx, Bazel, Turborepo, or another build system** | What work runs |
-| **GitHub Actions** | How work is orchestrated, proven, and reported |
+<table>
+<tr>
+<td align="center" width="33%"><strong>698.54 sec</strong><br><sub>REMOVED</sub></td>
+<td align="center" width="33%"><strong>96.2%</strong><br><sub>REDUCTION</sub></td>
+<td align="center" width="33%"><strong>26.1×</strong><br><sub>FASTER</sub></td>
+</tr>
+</table>
 
-Custom images do not replace intelligent caching, affected-target selection, or
-test splitting. The strongest design combines the layers.
-
-[Compare CI alternatives and the role of caches and artifacts →](docs/deep-dive.md#architecture-and-competitive-context)
-
-## ◇ Cost example
-
-Using this repository's measured POC and published runner rates:
-
-| Runs / month | Standard Windows path | Custom-image path* |
+| Runs / month | Standard Windows | Custom image* |
 |---:|---:|---:|
 | 1,000 | $130.00 | **$26.67** |
 | 10,000 | $1,300.00 | **$224.67** |
 | 50,000 | $6,500.00 | **$1,104.67** |
 
 <sub>
-* Example runner compute only: 13 billed standard Windows minutes versus one
-billed 4-core Windows minute, plus $4.67/month observed image-build and canary
-compute. Storage and plan allowances vary.
+* Example runner compute using this POC. Storage and plan allowances vary.
 </sub>
 
-> Measure your own repository, software stack, volume, retention, and plan.
-> Treat setup time as workflow time—not automatically as labor savings.
+Both paths used fresh hosted VMs, the same commit, the same 186,978 files, and
+the same Git-to-SQL proof.
 
-[Review the formula, rates, assumptions, and storage caveats →](docs/deep-dive.md#cost-methodology)
+[Review exact timings, assumptions, and correctness evidence →](docs/deep-dive.md#verified-benchmark-evidence)
 
-## ✓ One measured implementation
-
-This repository pre-warms a Windows image with:
-
-- SQL Server 2022 Developer
-- A full-history `llvm/llvm-project` workspace
-- 186,978 tracked files at one pinned commit
-
-| Measured setup | Standard `windows-latest` | Custom image |
-|---|---:|---:|
-| Full-history checkout | 8 min 42 sec | **27 sec** |
-| SQL Server ready | 3 min 24 sec | **0.27 sec** |
-| **Ready for work** | **12 min 06 sec** | **28 sec** |
-
-<table>
-<tr>
-<td align="center" width="33%"><strong>698.54 sec</strong><br><sub>REMOVED</sub></td>
-<td align="center" width="33%"><strong>96.2%</strong><br><sub>SETUP REDUCTION</sub></td>
-<td align="center" width="33%"><strong>26.1×</strong><br><sub>FASTER</sub></td>
-</tr>
-</table>
-
-Both paths used fresh hosted VMs, checked out the same commit, reported the
-same file count, and completed the same Git-to-SQL proof. This result
-demonstrates the pattern; it is not a universal performance promise.
-
-[Inspect exact timings, benchmark identity, and correctness gates →](docs/deep-dive.md#verified-benchmark-evidence)
-
-## ⌘ Use this repository as a template
-
-> [!IMPORTANT]
-> Configure the image-generation and consumer runners, set
-> `BENCHMARK_REPOSITORY`, then publish your own before/after result.
+## ⌘ Use this template
 
 <p align="center">
   <a href="assets/template-journey.svg">
@@ -145,39 +82,21 @@ demonstrates the pattern; it is not a universal performance promise.
   </a>
 </p>
 
-| Start here | Customize |
-|---|---|
-| [Image build](.github/workflows/build-custom-image.yml) | Install your software and prepare stable assets |
-| [Before/after benchmark](.github/workflows/compare-before-after.yml) | Measure equivalent setup and proof paths |
-| [Daily canary](.github/workflows/validate-custom-image.yml) | Validate freshness and real workload readiness |
-| [PowerShell scripts](scripts) | Reuse timeout, sanitization, and proof patterns |
+1. Configure image-generation and consumer runners.
+2. Set `BENCHMARK_REPOSITORY`.
+3. Build the image and publish your own before/after result.
 
-[Follow the exact runner setup and warm-checkout design →](docs/deep-dive.md#implementation-guide)
-
-Community examples:
-[`km-allthethings/build-custom-images`](https://github.com/km-allthethings/build-custom-images)
-
-## ↻ Keep images current
-
-<p align="center">
-  <a href="assets/image-lifecycle.svg">
-    <img src="assets/image-lifecycle.svg" width="100%" alt="Weekly image rebuild and daily readiness-canary lifecycle">
-  </a>
-</p>
-
-This template performs a clean weekly rebuild from GitHub's current base image
-and a daily consumer canary. Keep the current version plus one known-good
-rollback version.
-
-[Review promotion, rollback, retention, and security guardrails →](docs/deep-dive.md#operations-and-security)
+[Build image](.github/workflows/build-custom-image.yml)
+· [Run benchmark](.github/workflows/compare-before-after.yml)
+· [Validate daily](.github/workflows/validate-custom-image.yml)
 
 ---
 
 <div align="center">
 
-### ◈ Build once · Validate continuously · Start every job ready
+**[Implementation, lifecycle, security, economics, and references →](docs/deep-dive.md)**
 
-[Custom-image documentation](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
-· [Deep dive](docs/deep-dive.md)
+[GitHub custom-image documentation](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
+· [Community examples](https://github.com/km-allthethings/build-custom-images)
 
 </div>
