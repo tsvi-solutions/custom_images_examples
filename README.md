@@ -9,7 +9,7 @@
 [![Validated pattern](https://img.shields.io/badge/VALIDATED-PATTERN-1F883D?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](docs/deep-dive.md#verified-benchmark-evidence)
 [![Implementation guide](https://img.shields.io/badge/RECOMMENDED-IMPLEMENTATION_PATTERN-238636?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](#-recommended-implementation-pattern)
 
-Build the environment once. Stop paying the setup tax on every run.
+**Build once. Cut repeated setup, runner spend, and feedback time on every run.**
 
 </div>
 
@@ -22,6 +22,9 @@ Build the environment once. Stop paying the setup tax on every run.
     <img src="assets/custom-image-value.svg" width="100%" alt="Without a custom image, every run repeats repository materialization, software installation, and workspace preparation; a warm image captures that setup once to reduce time and runner cost and accelerate feedback">
   </a>
 </p>
+
+> **ROI pattern:** Remove a repeated setup path once. Multiply its time and
+> compute savings across every workflow run.
 
 <p align="center">
   <img src="assets/benefit-strip.svg" width="100%" alt="Faster starts, lower compute, and consistent runs">
@@ -53,7 +56,7 @@ Capture work that is **large, stable, slow, deterministic, and safe**.
 
 <div align="center">
 
-**[Implementation, lifecycle, security, economics, and references →](docs/deep-dive.md)**
+**[Implementation, lifecycle, cost models & ROI, security, and measured evidence →](docs/deep-dive.md)**
 
 [GitHub custom-image documentation](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
 · [Community examples](https://github.com/km-allthethings/build-custom-images)
