@@ -52,6 +52,18 @@ Capture work that is **large, stable, slow, deterministic, and safe**.
 
 [Explore the implementation guide →](docs/deep-dive.md#implementation-guide)
 
+## ◎ Included example · Windows monorepo + SQL Server
+
+This repository pre-warms **SQL Server 2022 Developer** and a prepared
+**`llvm/llvm-project` workspace** on a GitHub-hosted Windows custom image.
+
+- [Build the custom image](.github/workflows/build-custom-image.yml)
+- [Compare standard and custom-image paths](.github/workflows/compare-before-after.yml)
+- [Run the daily readiness canary](.github/workflows/validate-custom-image.yml)
+- [Review the PowerShell implementation](scripts)
+
+[Architecture, runner setup, and measured evidence →](docs/deep-dive.md#included-repository-example)
+
 ---
 
 <div align="center">

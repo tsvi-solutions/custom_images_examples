@@ -4,6 +4,23 @@ This reference contains the implementation, economics, competitive context,
 and operational detail intentionally kept out of the visual
 [README](../README.md).
 
+## Included repository example
+
+The included proof of concept uses a GitHub-hosted Windows custom image to
+pre-install SQL Server 2022 Developer and prepare a full-history
+`llvm/llvm-project` workspace. The comparison resolves one commit, starts both
+paths on fresh hosted VMs, and runs the same Git-to-SQL correctness proof.
+
+| Repository example | Implementation |
+|---|---|
+| Build and snapshot the custom image | [`build-custom-image.yml`](../.github/workflows/build-custom-image.yml) |
+| Compare standard and custom-image readiness | [`compare-before-after.yml`](../.github/workflows/compare-before-after.yml) |
+| Validate freshness and readiness daily | [`validate-custom-image.yml`](../.github/workflows/validate-custom-image.yml) |
+| Install, seed, initialize, and prove the workload | [`scripts/`](../scripts) |
+
+See [verified benchmark evidence](#verified-benchmark-evidence) for the pinned
+commit, exact timings, file counts, and equivalence checks.
+
 ## Workload examples
 
 | Workload | Put in the image | Remove from every job |
