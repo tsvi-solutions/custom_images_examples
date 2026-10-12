@@ -6,8 +6,8 @@
 
 [![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Custom_Images-2088FF?style=for-the-badge&logo=githubactions&logoColor=white&labelColor=0D1117)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
 [![Platforms](https://img.shields.io/badge/Platforms-Linux_%C2%B7_Windows_%C2%B7_ARM64-8250DF?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/manage-runners/larger-runners/use-custom-images)
-[![Verified POC](https://img.shields.io/badge/VERIFIED-26.1%C3%97_FASTER-1F883D?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](#-one-measured-implementation)
-[![Use template](https://img.shields.io/badge/START_HERE-USE_TEMPLATE-238636?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](#-use-this-template)
+[![Validated pattern](https://img.shields.io/badge/VALIDATED-PATTERN-1F883D?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](docs/deep-dive.md#verified-benchmark-evidence)
+[![Implementation guide](https://img.shields.io/badge/RECOMMENDED-IMPLEMENTATION_PATTERN-238636?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1117)](#-recommended-implementation-pattern)
 
 Build the environment once. Stop paying the setup tax on every run.
 
@@ -23,13 +23,9 @@ Build the environment once. Stop paying the setup tax on every run.
   </a>
 </p>
 
-<table>
-<tr>
-<td align="center" width="33%"><strong>↯ FASTER</strong><br><sub>REMOVE SETUP</sub></td>
-<td align="center" width="33%"><strong>◇ LOWER COST</strong><br><sub>STOP REBUILDING</sub></td>
-<td align="center" width="33%"><strong>✓ CONSISTENT</strong><br><sub>START VALIDATED</sub></td>
-</tr>
-</table>
+<p align="center">
+  <img src="assets/benefit-strip.svg" width="100%" alt="Faster starts, lower compute, and consistent runs">
+</p>
 
 ## ◆ Where they help
 
@@ -41,40 +37,9 @@ Build the environment once. Stop paying the setup tax on every run.
 
 Capture work that is **large, stable, slow, deterministic, and safe**.
 
-[See workload examples, caching guidance, and architecture →](docs/deep-dive.md)
+[See workload examples, architecture, caching guidance, and measured evidence →](docs/deep-dive.md)
 
-## ✓ One measured implementation
-
-**Windows + SQL Server + full-history LLVM workspace**
-
-| Ready for work | Standard runner | Custom image |
-|---|---:|---:|
-| Measured time | 12 min 06 sec | **28 sec** |
-
-<table>
-<tr>
-<td align="center" width="33%"><strong>698.54 sec</strong><br><sub>REMOVED</sub></td>
-<td align="center" width="33%"><strong>96.2%</strong><br><sub>REDUCTION</sub></td>
-<td align="center" width="33%"><strong>26.1×</strong><br><sub>FASTER</sub></td>
-</tr>
-</table>
-
-| Runs / month | Standard Windows | Custom image* |
-|---:|---:|---:|
-| 1,000 | $130.00 | **$26.67** |
-| 10,000 | $1,300.00 | **$224.67** |
-| 50,000 | $6,500.00 | **$1,104.67** |
-
-<sub>
-* Example runner compute using this POC. Storage and plan allowances vary.
-</sub>
-
-Both paths used fresh hosted VMs, the same commit, the same 186,978 files, and
-the same Git-to-SQL proof.
-
-[Review exact timings, assumptions, and correctness evidence →](docs/deep-dive.md#verified-benchmark-evidence)
-
-## ⌘ Use this template
+## ⌘ Recommended implementation pattern
 
 <p align="center">
   <a href="assets/template-journey.svg">
@@ -82,13 +47,7 @@ the same Git-to-SQL proof.
   </a>
 </p>
 
-1. Configure image-generation and consumer runners.
-2. Set `BENCHMARK_REPOSITORY`.
-3. Build the image and publish your own before/after result.
-
-[Build image](.github/workflows/build-custom-image.yml)
-· [Run benchmark](.github/workflows/compare-before-after.yml)
-· [Validate daily](.github/workflows/validate-custom-image.yml)
+[Explore the implementation guide →](docs/deep-dive.md#implementation-guide)
 
 ---
 

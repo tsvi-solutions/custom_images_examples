@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="230" viewBox="0 0 1200 230" role="img" aria-labelledby="title desc">
+  <title id="title">Three benefits of pre-warmed custom images</title>
+  <desc id="desc">Custom images create faster starts by removing repeated setup, lower compute costs by avoiding repeated environment builds, and consistent runs by starting from a validated foundation.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1117"/>
+      <stop offset="1" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1f6feb"/>
+      <stop offset="1" stop-color="#58a6ff"/>
+    </linearGradient>
+    <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8250df"/>
+      <stop offset="1" stop-color="#a371f7"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#238636"/>
+      <stop offset="1" stop-color="#3fb950"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%">
+      <feDropShadow dx="0" dy="7" stdDeviation="10" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M24 0H0V24" fill="none" stroke="#30363d" stroke-width="1" opacity="0.22"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="230" rx="26" fill="url(#background)"/>
+  <rect width="1200" height="230" rx="26" fill="url(#grid)"/>
+  <circle cx="1120" cy="10" r="140" fill="#8250df" opacity="0.07"/>
+
+  <g filter="url(#shadow)" font-family="Inter,Segoe UI,Arial,sans-serif">
+    <rect x="30" y="28" width="360" height="174" rx="22" fill="#111f35" stroke="#1f6feb" stroke-width="2"/>
+    <rect x="30" y="28" width="8" height="174" rx="4" fill="url(#blue)"/>
+    <circle cx="91" cy="84" r="29" fill="url(#blue)" filter="url(#glow)"/>
+    <path d="M96 60L78 87H91L86 108L105 79H92Z" fill="#ffffff"/>
+    <text x="137" y="78" fill="#79c0ff" font-size="12" font-weight="800" letter-spacing="1.5">01 · VELOCITY</text>
+    <text x="137" y="108" fill="#f0f6fc" font-size="24" font-weight="900">FASTER STARTS</text>
+    <text x="67" y="154" fill="#c9d1d9" font-size="15">Remove repeated setup from every run</text>
+    <rect x="67" y="174" width="146" height="4" rx="2" fill="url(#blue)"/>
+
+    <rect x="420" y="28" width="360" height="174" rx="22" fill="#211a35" stroke="#8250df" stroke-width="2"/>
+    <rect x="420" y="28" width="8" height="174" rx="4" fill="url(#purple)"/>
+    <circle cx="481" cy="84" r="29" fill="url(#purple)" filter="url(#glow)"/>
+    <path d="M481 65V103M469 75C469 69 493 69 493 76C493 83 469 82 469 91C469 99 493 99 493 92" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+    <text x="527" y="78" fill="#c8b6ff" font-size="12" font-weight="800" letter-spacing="1.5">02 · EFFICIENCY</text>
+    <text x="527" y="108" fill="#f0f6fc" font-size="24" font-weight="900">LOWER COMPUTE</text>
+    <text x="457" y="154" fill="#c9d1d9" font-size="15">Stop rebuilding the same environment</text>
+    <rect x="457" y="174" width="146" height="4" rx="2" fill="url(#purple)"/>
+
+    <rect x="810" y="28" width="360" height="174" rx="22" fill="#12261a" stroke="#238636" stroke-width="2"/>
+    <rect x="810" y="28" width="8" height="174" rx="4" fill="url(#green)"/>
+    <circle cx="871" cy="84" r="29" fill="url(#green)" filter="url(#glow)"/>
+    <path d="M856 84L866 94L887 70" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="917" y="78" fill="#7ee787" font-size="12" font-weight="800" letter-spacing="1.5">03 · CONFIDENCE</text>
+    <text x="917" y="108" fill="#f0f6fc" font-size="24" font-weight="900">CONSISTENT RUNS</text>
+    <text x="847" y="154" fill="#c9d1d9" font-size="15">Start from a validated foundation</text>
+    <rect x="847" y="174" width="146" height="4" rx="2" fill="url(#green)"/>
+  </g>
+</svg>
